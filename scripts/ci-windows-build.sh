@@ -133,6 +133,26 @@ if [[ ! -f "$sdk_dir/CoreMessagingXP.dll" ]]; then
 fi
 export MOZ_WINDOWS_APP_SDK_DIR="$(cygpath -m "$sdk_dir")"
 
+# Wasm-sandboxed libraries need a wasi sysroot. Bootstrap does not fetch
+# it on Windows, so unpack the pinned wasi-sdk sysroot and add the
+# wasm32-wasi compat copies upstream ships for older clang.
+wasi_cache="$ROOT/.cache/wasi"
+wasi_dir="$wasi_cache/wasi-sysroot-34.0"
+if [[ ! -f "$wasi_dir/lib/wasm32-wasi/libc.a" ]]; then
+  mkdir -p "$wasi_cache"
+  tarball="$wasi_cache/wasi-sysroot-34.0.tar.gz"
+  if [[ ! -f "$tarball" ]]; then
+    echo "downloading wasi sysroot"
+    curl -fL --retry 3 -o "$tarball" \
+      "https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-34/wasi-sysroot-34.0.tar.gz"
+  fi
+  echo "9d813544eeebe38b7b8f2244ed591de46b6db812c6dd1a257ff9f0d2a905a2be  $tarball" | sha256sum -c -
+  /c/Windows/System32/tar.exe -C "$wasi_cache" -xzf "$tarball"
+  cp -r "$wasi_dir/lib/wasm32-wasip1" "$wasi_dir/lib/wasm32-wasi"
+  cp -r "$wasi_dir/include/wasm32-wasip1" "$wasi_dir/include/wasm32-wasi"
+fi
+export WASI_SYSROOT="$(cygpath -m "$wasi_dir")"
+
 export MOZCONFIG
 cd "$SRC"
 
