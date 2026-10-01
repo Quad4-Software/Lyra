@@ -90,6 +90,12 @@ export MOZCONFIG
 cd "$SRC"
 
 ./mach --no-interactive bootstrap --application-choice browser --no-system-changes
+
+# Windows bootstrap installs rustup but not cbindgen.
+if ! command -v cbindgen >/dev/null; then
+  cargo install cbindgen --locked
+fi
+
 ./mach configure
 ./mach build
 
