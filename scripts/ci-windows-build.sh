@@ -180,6 +180,24 @@ if ! command -v cbindgen >/dev/null; then
   cargo install cbindgen --locked
 fi
 
+# Configure needs the windows crate source extracted on disk. Mozilla does
+# not ship it in the tarball. Pull the pinned crate from static.crates.io
+# and export MOZ_WINDOWS_RS_DIR for configure.
+winrs_ver="0.62.2"
+winrs_dir="$ROOT/.cache/windows-rs/windows-$winrs_ver"
+if [[ ! -f "$winrs_dir/Cargo.toml" ]]; then
+  mkdir -p "$ROOT/.cache/windows-rs"
+  crate="$ROOT/.cache/windows-rs/windows-$winrs_ver.crate"
+  if [[ ! -f "$crate" ]]; then
+    echo "downloading windows-rs crate"
+    curl -fL --retry 3 -o "$crate" \
+      "https://static.crates.io/crates/windows/windows-$winrs_ver.crate"
+  fi
+  echo "527fadee13e0c05939a6a05d5bd6eec6cd2e3dbd648b9f8e447c6518133d8580  $crate" | sha256sum -c -
+  /c/Windows/System32/tar.exe -C "$ROOT/.cache/windows-rs" -xzf "$crate"
+fi
+export MOZ_WINDOWS_RS_DIR="$(cygpath -m "$winrs_dir")"
+
 ./mach configure
 ./mach build
 
