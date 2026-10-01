@@ -153,6 +153,25 @@ if [[ ! -f "$wasi_dir/lib/wasm32-wasi/libc.a" ]]; then
 fi
 export WASI_SYSROOT="$(cygpath -m "$wasi_dir")"
 
+# The wasm link check wants libclang_rt.builtins.a for wasm32-unknown-wasi
+# inside the clang resource dir. Drop the pinned copy next to the image
+# clang we put on PATH.
+rt_tgz="$wasi_cache/libclang_rt-34.0.tar.gz"
+clang_lib="$(dirname "$(command -v clang-cl)")/../lib/clang"
+if [[ -d "$clang_lib" ]] \
+  && ! ls "$clang_lib"/*/lib/wasm32-unknown-wasi/libclang_rt.builtins.a >/dev/null 2>&1; then
+  if [[ ! -f "$rt_tgz" ]]; then
+    curl -fL --retry 3 -o "$rt_tgz" \
+      "https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-34/libclang_rt-34.0.tar.gz"
+  fi
+  echo "eee3e634dcf71aa22b1333391623cf5c9965a637dc428a27b1a858c026c587f1  $rt_tgz" | sha256sum -c -
+  for vdir in "$clang_lib"/*/lib; do
+    mkdir -p "$vdir/wasm32-unknown-wasi"
+    /c/Windows/System32/tar.exe -C "$vdir/wasm32-unknown-wasi" -xzf "$rt_tgz" \
+      --strip-components=2 "libclang_rt-34.0/wasm32-unknown-wasi/libclang_rt.builtins.a"
+  done
+fi
+
 export MOZCONFIG
 cd "$SRC"
 
