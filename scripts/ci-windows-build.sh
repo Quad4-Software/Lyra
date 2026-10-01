@@ -14,9 +14,17 @@ JOBS="${LYRA_JOBS:-$(nproc)}"
 
 export MOZBUILD_STATE_PATH="${MOZBUILD_STATE_PATH:-${USERPROFILE:-$HOME}/.mozbuild}"
 MOZBUILD_STATE_PATH="$(cygpath -m "$MOZBUILD_STATE_PATH")"
-export PATH="${HOME}/.cargo/bin:${PATH}"
+export PATH="$(cygpath -u "${USERPROFILE:-$HOME}")/.cargo/bin:${PATH}"
 umask 022
 
+# A bare msys2 login shell does not get the MozillaBuild PATH. Find its
+# bundled CPython if neither python3 nor python resolve.
+if ! command -v python3 >/dev/null && ! command -v python >/dev/null; then
+  pyexe="$(find /c/mozilla-build -maxdepth 3 \( -name 'python3.exe' -o -name 'python.exe' \) 2>/dev/null | head -1)"
+  if [[ -n "$pyexe" ]]; then
+    export PATH="$(dirname "$pyexe"):$PATH"
+  fi
+fi
 if ! command -v python3 >/dev/null && command -v python >/dev/null; then
   mkdir -p "$HOME/.local/bin"
   printf '#!/usr/bin/env bash\nexec python "$@"\n' > "$HOME/.local/bin/python3"
