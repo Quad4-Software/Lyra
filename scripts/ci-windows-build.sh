@@ -69,6 +69,23 @@ cat "$ROOT/mozconfig" "$ROOT/mozconfig.windows" > "$SRC/mozconfig"
 } >> "$SRC/mozconfig"
 
 MOZCONFIG="$(cygpath -m "$SRC/mozconfig")"
+# Bootstrap on Windows does not fetch a compiler. Use the clang-cl that
+# ships in the runner image: VS LLVM tools first, standalone LLVM next.
+for d in \
+  "/c/Program Files/Microsoft Visual Studio/2022/Enterprise/VC/Tools/Llvm/x64/bin" \
+  "/c/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/Llvm/x64/bin" \
+  "/c/Program Files/LLVM/bin"; do
+  if [[ -x "$d/clang-cl.exe" ]]; then
+    export PATH="$d:$PATH"
+    echo "clang-cl from $d"
+    break
+  fi
+done
+if ! command -v clang-cl >/dev/null; then
+  echo "clang-cl not found on PATH or in the runner image" >&2
+  exit 1
+fi
+
 export MOZCONFIG
 cd "$SRC"
 
