@@ -142,4 +142,7 @@ jobs:
           gh release create "$TAG" dist/* \
             --repo "$GITHUB_REPOSITORY" \
             --title "Lyra $TAG" \
-            --generate-notes
+            --generate-notes \
+          || gh release upload "$TAG" dist/* \
+            --repo "$GITHUB_REPOSITORY" \
+            --clobber
