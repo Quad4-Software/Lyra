@@ -150,6 +150,10 @@ if [[ ! -f "$wasi_dir/lib/wasm32-wasi/libc.a" ]]; then
   /c/Windows/System32/tar.exe -C "$wasi_cache" -xzf "$tarball"
   cp -r "$wasi_dir/lib/wasm32-wasip1" "$wasi_dir/lib/wasm32-wasi"
   cp -r "$wasi_dir/include/wasm32-wasip1" "$wasi_dir/include/wasm32-wasi"
+  # The tarball leaves include/c++/v1 empty; the exceptions-off libc++
+  # headers live under the noeh multilib dir. Upstream builds a
+  # WASI_SDK_EXCEPTIONS=OFF sysroot where they sit in include/c++/v1.
+  cp -r "$wasi_dir/include/wasm32-wasip1/noeh/c++/v1/." "$wasi_dir/include/c++/v1/"
 fi
 export WASI_SYSROOT="$(cygpath -m "$wasi_dir")"
 
