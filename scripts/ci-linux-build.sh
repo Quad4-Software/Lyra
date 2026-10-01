@@ -15,6 +15,16 @@ export PATH="${HOME}/.cargo/bin:${PATH}"
 export MOZBUILD_STATE_PATH="${MOZBUILD_STATE_PATH:-$HOME/.mozbuild}"
 umask 022
 
+# Long compiles on hosted runners get SIGTERM with no hint. Log memory
+# and disk every minute so a kill is diagnosable after the fact.
+( while :; do
+    printf 'monitor %s | ' "$(date -u +%H:%M:%S)"
+    free -m | awk 'NR==2 {printf "mem %s/%sMB ", $3, $2}'
+    df -h "$ROOT" | awk 'NR==2 {printf "disk %s used, %s free\n", $3, $4}'
+    sleep 60
+  done ) &
+trap 'kill %1 2>/dev/null || true' EXIT
+
 sudo apt-get update
 sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
   python3 python3-pip python3-venv python3-dev \
