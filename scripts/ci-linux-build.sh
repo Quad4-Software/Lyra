@@ -122,7 +122,7 @@ mkdir -p "$OUT"
 STAGE="$OUT/lyra-${VOID_VERSION}-linux-x86_64"
 rm -rf "$STAGE"
 mkdir -p "$STAGE"
-cp -a "$BIN/." "$STAGE/"
+cp -aL "$BIN/." "$STAGE/"
 tar -C "$OUT" -cJf "$OUT/lyra-${VOID_VERSION}-linux-x86_64.tar.xz" "$(basename "$STAGE")"
 rm -rf "$STAGE"
 

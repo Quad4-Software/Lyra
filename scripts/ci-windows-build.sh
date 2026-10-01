@@ -263,7 +263,7 @@ STAGE="$OUT/lyra-${VOID_VERSION}-windows-x86_64"
 ZIP="$OUT/lyra-${VOID_VERSION}-windows-x86_64.zip"
 rm -rf "$STAGE" "$ZIP"
 mkdir -p "$STAGE"
-cp -a "$BIN/." "$STAGE/"
+cp -aL "$BIN/." "$STAGE/"
 
 if command -v 7z >/dev/null; then
   (cd "$STAGE" && 7z a -tzip -mx=5 "$ZIP" . >/dev/null)
