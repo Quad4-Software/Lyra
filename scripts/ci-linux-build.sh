@@ -9,7 +9,8 @@ source "$ROOT/VERSION"
 
 SRC="${LYRA_SRC:-$ROOT/firefox-src}"
 OUT="${LYRA_OUT:-$ROOT/out}"
-JOBS="${LYRA_JOBS:-$(nproc)}"
+# 4-way rustc parallelism OOMs a 16 GB hosted runner. Keep one core back.
+JOBS="${LYRA_JOBS:-$(( $(nproc) > 1 ? $(nproc) - 1 : 1 ))}"
 
 export PATH="${HOME}/.cargo/bin:${PATH}"
 export MOZBUILD_STATE_PATH="${MOZBUILD_STATE_PATH:-$HOME/.mozbuild}"

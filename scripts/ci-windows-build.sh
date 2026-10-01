@@ -10,12 +10,25 @@ source "$ROOT/VERSION"
 
 SRC="${LYRA_SRC:-$ROOT/firefox-src}"
 OUT="${LYRA_OUT:-$ROOT/out}"
-JOBS="${LYRA_JOBS:-$(nproc)}"
+# 4-way rustc parallelism OOMs a 16 GB hosted runner. Keep one core back.
+JOBS="${LYRA_JOBS:-$(( $(nproc) > 1 ? $(nproc) - 1 : 1 ))}"
 
 export MOZBUILD_STATE_PATH="${MOZBUILD_STATE_PATH:-${USERPROFILE:-$HOME}/.mozbuild}"
 MOZBUILD_STATE_PATH="$(cygpath -m "$MOZBUILD_STATE_PATH")"
 export PATH="$(cygpath -u "${USERPROFILE:-$HOME}")/.cargo/bin:${PATH}"
 umask 022
+
+# Long compiles on hosted runners get SIGTERM with no hint. Log memory
+# and disk every minute so a kill is diagnosable after the fact.
+( while :; do
+    printf 'monitor %s | ' "$(date -u +%H:%M:%S)"
+    powershell.exe -NoProfile -Command \
+      "\$o=Get-CimInstance Win32_OperatingSystem; 'mem {0}/{1}MB' -f [int]((\$o.TotalVisibleMemorySize-\$o.FreePhysicalMemory)/1KB), [int](\$o.TotalVisibleMemorySize/1KB)" \
+      2>/dev/null | tr -d '\r' | tr '\n' ' '
+    df -h "$ROOT" | awk 'NR==2 {printf "disk %s used, %s free\n", $3, $4}'
+    sleep 60
+  done ) &
+trap 'kill %1 2>/dev/null || true' EXIT
 
 # A bare msys2 login shell does not get the MozillaBuild PATH. Find its
 # bundled CPython if neither python3 nor python resolve.

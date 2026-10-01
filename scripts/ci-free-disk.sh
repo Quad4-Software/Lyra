@@ -27,7 +27,7 @@ sudo apt-get clean || true
 sudo docker system prune -af || true
 
 if ! swapon --show | grep -q .; then
-  sudo fallocate -l 8G /swapfile || sudo dd if=/dev/zero of=/swapfile bs=1M count=8192 status=none
+  sudo fallocate -l 16G /swapfile || sudo dd if=/dev/zero of=/swapfile bs=1M count=16384 status=none
   sudo chmod 600 /swapfile
   sudo mkswap /swapfile
   sudo swapon /swapfile
