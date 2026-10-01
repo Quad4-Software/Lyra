@@ -44,5 +44,5 @@ if [[ -f "$EXTRACT/mach" ]]; then
 fi
 
 echo "extracting into $EXTRACT (this takes a few minutes)"
-tar -C "$EXTRACT" --strip-components=1 -xf "$DEST"
+"${TAR:-tar}" -C "$EXTRACT" --strip-components=1 -xf "$DEST"
 echo "extracted $EXTRACT"

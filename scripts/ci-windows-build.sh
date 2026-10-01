@@ -36,6 +36,12 @@ if ! command -v python3 >/dev/null; then
   exit 1
 fi
 
+# msys tar forks to spawn xz and can hit dll base collisions on hosted
+# runners. bsdtar in System32 is a native binary and does not fork.
+if [[ -x "/c/Windows/System32/tar.exe" ]]; then
+  export TAR="/c/Windows/System32/tar.exe"
+fi
+
 "$ROOT/scripts/fetch-firefox.sh" "$SRC"
 "$ROOT/scripts/apply-overlay.sh" "$SRC"
 "$ROOT/extensions/ublock/fetch.sh"

@@ -99,6 +99,8 @@ jobs:
           if (-not $bash) { throw "bash.exe not found under C:\mozilla-build" }
           "MOZ_BASH=$($bash.FullName)" >> $env:GITHUB_ENV
           Write-Output "MozillaBuild bash: $($bash.FullName)"
+          $rebase = 'C:\mozilla-build\msys2\autorebase.bat'
+          if (Test-Path $rebase) { & cmd /c $rebase }
 
       - name: Compile Lyra
         shell: pwsh
