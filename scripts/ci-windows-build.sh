@@ -103,6 +103,36 @@ if ! command -v nasm >/dev/null; then
   exit 1
 fi
 
+# Configure needs the Windows App SDK redistributable DLLs. Bootstrap does
+# not fetch the toolchain on Windows, so pull the pinned redist zip and
+# extract only the DLLs the build copies into dist.
+sdk_cache="$ROOT/.cache/winappsdk"
+sdk_dir="$sdk_cache/x64"
+if [[ ! -f "$sdk_dir/CoreMessagingXP.dll" ]]; then
+  rm -rf "$sdk_dir"
+  mkdir -p "$sdk_dir"
+  redist="$sdk_cache/Microsoft.WindowsAppRuntime.Redist.2.2.zip"
+  if [[ ! -f "$redist" ]]; then
+    echo "downloading Windows App SDK redist"
+    curl -fL --retry 3 -o "$redist" \
+      "https://aka.ms/windowsappsdk/2.2/2.2.0/Microsoft.WindowsAppRuntime.Redist.2.2.zip"
+  fi
+  echo "ab078d5b1d730f093ed4e1a33d0e709d1dbca85fa4a10f546cc6824e3b48057f  $redist" | sha256sum -c -
+  /c/Windows/System32/tar.exe -C "$sdk_cache" -xf "$redist" \
+    "MSIX/win10-x64/Microsoft.WindowsAppRuntime.2.msix"
+  msix="$sdk_cache/MSIX/win10-x64/Microsoft.WindowsAppRuntime.2.msix"
+  for dll in \
+    CoreMessagingXP.dll marshal.dll Microsoft.InputStateManager.dll \
+    Microsoft.Internal.FrameworkUdk.dll Microsoft.UI.Composition.OSSupport.dll \
+    Microsoft.UI.Input.dll Microsoft.UI.Windowing.Core.dll \
+    Microsoft.UI.Windowing.dll Microsoft.WindowsAppRuntime.dll \
+    Microsoft.WindowsAppRuntime.Insights.Resource.dll; do
+    /c/Windows/System32/tar.exe -C "$sdk_dir" -xf "$msix" "$dll"
+  done
+  rm -rf "$sdk_cache/MSIX"
+fi
+export MOZ_WINDOWS_APP_SDK_DIR="$(cygpath -m "$sdk_dir")"
+
 export MOZCONFIG
 cd "$SRC"
 
