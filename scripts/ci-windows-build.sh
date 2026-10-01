@@ -134,45 +134,39 @@ fi
 export MOZ_WINDOWS_APP_SDK_DIR="$(cygpath -m "$sdk_dir")"
 
 # Wasm-sandboxed libraries need a wasi sysroot. Bootstrap does not fetch
-# it on Windows, so unpack the pinned wasi-sdk sysroot and add the
-# wasm32-wasi compat copies upstream ships for older clang.
+# it on Windows, so unpack the pinned wasi-sdk sysroot. wasi-sdk 27 is
+# built on LLVM 20.1.8, matching the clang 20 in the runner image.
 wasi_cache="$ROOT/.cache/wasi"
-wasi_dir="$wasi_cache/wasi-sysroot-34.0"
+wasi_dir="$wasi_cache/wasi-sysroot-27.0"
 if [[ ! -f "$wasi_dir/lib/wasm32-wasi/libc.a" ]]; then
   mkdir -p "$wasi_cache"
-  tarball="$wasi_cache/wasi-sysroot-34.0.tar.gz"
+  tarball="$wasi_cache/wasi-sysroot-27.0.tar.gz"
   if [[ ! -f "$tarball" ]]; then
     echo "downloading wasi sysroot"
     curl -fL --retry 3 -o "$tarball" \
-      "https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-34/wasi-sysroot-34.0.tar.gz"
+      "https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-27/wasi-sysroot-27.0.tar.gz"
   fi
-  echo "9d813544eeebe38b7b8f2244ed591de46b6db812c6dd1a257ff9f0d2a905a2be  $tarball" | sha256sum -c -
+  echo "7110ac48f5d0b1f6ab67d57aecf52450540dddd790cafdc45f0fdfb429bdab84  $tarball" | sha256sum -c -
   /c/Windows/System32/tar.exe -C "$wasi_cache" -xzf "$tarball"
-  cp -r "$wasi_dir/lib/wasm32-wasip1" "$wasi_dir/lib/wasm32-wasi"
-  cp -r "$wasi_dir/include/wasm32-wasip1" "$wasi_dir/include/wasm32-wasi"
-  # The tarball leaves include/c++/v1 empty; the exceptions-off libc++
-  # headers live under the noeh multilib dir. Upstream builds a
-  # WASI_SDK_EXCEPTIONS=OFF sysroot where they sit in include/c++/v1.
-  cp -r "$wasi_dir/include/wasm32-wasip1/noeh/c++/v1/." "$wasi_dir/include/c++/v1/"
 fi
 export WASI_SYSROOT="$(cygpath -m "$wasi_dir")"
 
 # The wasm link check wants libclang_rt.builtins.a for wasm32-unknown-wasi
 # inside the clang resource dir. Drop the pinned copy next to the image
 # clang we put on PATH.
-rt_tgz="$wasi_cache/libclang_rt-34.0.tar.gz"
+rt_tgz="$wasi_cache/libclang_rt-27.0.tar.gz"
 clang_lib="$(dirname "$(command -v clang-cl)")/../lib/clang"
 if [[ -d "$clang_lib" ]] \
   && ! ls "$clang_lib"/*/lib/wasm32-unknown-wasi/libclang_rt.builtins.a >/dev/null 2>&1; then
   if [[ ! -f "$rt_tgz" ]]; then
     curl -fL --retry 3 -o "$rt_tgz" \
-      "https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-34/libclang_rt-34.0.tar.gz"
+      "https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-27/libclang_rt-27.0.tar.gz"
   fi
-  echo "eee3e634dcf71aa22b1333391623cf5c9965a637dc428a27b1a858c026c587f1  $rt_tgz" | sha256sum -c -
+  echo "9e0f382110a3cf9196f02432c8f2e54d151515de36f9311c8c16073f6e6b16d3  $rt_tgz" | sha256sum -c -
   for vdir in "$clang_lib"/*/lib; do
     mkdir -p "$vdir/wasm32-unknown-wasi"
     /c/Windows/System32/tar.exe -C "$vdir/wasm32-unknown-wasi" -xzf "$rt_tgz" \
-      --strip-components=2 "libclang_rt-34.0/wasm32-unknown-wasi/libclang_rt.builtins.a"
+      --strip-components=2 "libclang_rt-27.0/wasm32-unknown-wasi/libclang_rt.builtins.a"
   done
 fi
 
