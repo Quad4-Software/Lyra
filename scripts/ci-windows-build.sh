@@ -90,13 +90,13 @@ if ! command -v clang-cl >/dev/null; then
 fi
 
 if ! command -v nasm >/dev/null; then
-  choco install nasm -y --no-progress 2>&1 | tail -3 || true
-  for d in "/c/Program Files/NASM" /c/nasm*; do
-    if [[ -x "$d/nasm.exe" ]]; then
-      export PATH="$d:$PATH"
-      break
-    fi
-  done
+  nasm_dir="$ROOT/.cache/nasm"
+  mkdir -p "$nasm_dir"
+  curl -fL --retry 3 -o "$nasm_dir/nasm.zip" \
+    "https://www.nasm.us/pub/nasm/releasebuilds/2.16.03/win64/nasm-2.16.03-win64.zip"
+  echo "3ee4782247bcb874378d02f7eab4e294a84d3d15f3f6ee2de2f47a46aa7226e6  $nasm_dir/nasm.zip" | sha256sum -c -
+  /c/Windows/System32/tar.exe -C "$nasm_dir" -xf "$nasm_dir/nasm.zip"
+  export PATH="$nasm_dir/nasm-2.16.03:$PATH"
 fi
 if ! command -v nasm >/dev/null; then
   echo "nasm not found" >&2
