@@ -34,9 +34,7 @@ export MOZCONFIG="$PWD/mozconfig"
 GitHub Actions:
 
 - `validate.yml` on push and pull request (layout, policies, zizmor)
-- `build-linux.yml` on `v*` tags and workflow_dispatch (full compile, uploads `lyra-*-linux-x86_64.tar.xz`)
-
-Windows CI checks the overlay only. It does not compile Firefox.
+- `build.yml` on `v*` tags and workflow_dispatch (Linux and Windows compiles, GitHub release on tags)
 
 ## Layout
 

@@ -14,11 +14,12 @@
 - Overlay and package scripts (`void` and `quad4` symlink to `lyra`)
 - uBlock Origin pin, fetch, dist install
 - ESR bump notes
-- GitHub Actions: overlay validate, zizmor, Linux compile on tags and dispatch
+- GitHub Actions: overlay validate, zizmor, Linux and Windows compiles on tags and dispatch, release publish on tags
 
 ## Not in tree
 
 - Published installers
+- Android build (needs a Fenix fork, not in the ESR tarball)
 - macOS `.icns` / `Assets.car`
 - Windows Authenticode
 - In-app update server

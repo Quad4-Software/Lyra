@@ -8,7 +8,7 @@ Lyra is built on a Firefox ESR source tarball. That tarball is not in git. Binar
 - About 30 GB free disk
 - 16 GB RAM (8 GB will swap)
 
-Windows and macOS use the same overlay. Linux is the first compile target. `mozconfig.windows` holds Windows extras. `windows-latest` CI validates the overlay and does not compile Firefox.
+Windows and macOS use the same overlay. `mozconfig.windows` holds Windows extras. CI compiles Linux and Windows. The Windows job runs `scripts/ci-windows-build.sh` inside a MozillaBuild shell on `windows-latest`.
 
 ## Steps
 
@@ -88,9 +88,11 @@ Check:
 
 `validate.yml` runs `scripts/validate.py` and zizmor on push and pull request.
 
-`build-linux.yml` compiles on `v*` tags and on workflow_dispatch. It uploads `lyra-<VOID_VERSION>-linux-x86_64.tar.xz`. GitHub-hosted runners are tight on disk. The job deletes unused runner software first. A compile takes hours.
+`build.yml` compiles Linux and Windows on `v*` tags and on workflow_dispatch. It uploads `lyra-<VOID_VERSION>-linux-x86_64.tar.xz` and `lyra-<VOID_VERSION>-windows-x86_64.zip`. On tag pushes a release job publishes a GitHub release with both artifacts. GitHub-hosted runners are tight on disk. The jobs delete unused runner software first. A compile takes hours.
 
-Actions are pinned to full commit SHAs. `GITHUB_TOKEN` is contents-read. Checkout does not persist credentials. The compile workflow does not use `pull_request_target`.
+The Windows job downloads MozillaBuild 4.2.1 from ftp.mozilla.org and verifies its SHA-256 before installing. It uses the Visual Studio that ships on the runner image.
+
+Actions are pinned to full commit SHAs. `GITHUB_TOKEN` is contents-read except the release job, which needs contents-write to publish. Checkout does not persist credentials. The compile workflow does not use `pull_request_target`.
 
 ## Object dir
 

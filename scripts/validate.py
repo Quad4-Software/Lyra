@@ -281,7 +281,7 @@ def check_layout() -> None:
         "docs/EXTENSIONS.md",
         "docs/STATUS.md",
         ".github/workflows/validate.yml",
-        ".github/workflows/build-linux.yml",
+        ".github/workflows/build.yml",
         ".github/dependabot.yml",
     ):
         require(ROOT / rel)
@@ -336,15 +336,19 @@ def check_layout() -> None:
         error("validate.yml must run on windows-latest")
     if "persist-credentials: false" not in workflow:
         error("validate.yml checkout must set persist-credentials false")
-    build_wf = (ROOT / ".github" / "workflows" / "build-linux.yml").read_text()
+    build_wf = (ROOT / ".github" / "workflows" / "build.yml").read_text()
     if "pull_request_target" in build_wf or "pull_request_target" in workflow:
         error("workflows must not use pull_request_target")
     if "persist-credentials: false" not in build_wf:
-        error("build-linux.yml checkout must set persist-credentials false")
+        error("build.yml checkout must set persist-credentials false")
     if "actions/checkout@" not in build_wf or "actions/upload-artifact@" not in build_wf:
-        error("build-linux.yml must pin checkout and upload-artifact")
+        error("build.yml must pin checkout and upload-artifact")
     if "scripts/ci-linux-build.sh" not in build_wf:
-        error("build-linux.yml must run scripts/ci-linux-build.sh")
+        error("build.yml must run scripts/ci-linux-build.sh")
+    if "scripts/ci-windows-build.sh" not in build_wf:
+        error("build.yml must run scripts/ci-windows-build.sh")
+    if "windows-latest" not in build_wf:
+        error("build.yml must include a windows-latest job")
     if "landlock-void" in extras or "landlock-void" in overlay:
         error("overlay scripts must not wrap Void with Landlock")
 
