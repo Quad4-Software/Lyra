@@ -318,11 +318,34 @@ glue.write_text(gtext)
 
 mods = src / "browser" / "modules" / "moz.build"
 mbuild = mods.read_text()
-if "LyraSync.sys.mjs" not in mbuild:
-    needle_mod = '    "AboutNewTab.sys.mjs",\n'
-    if needle_mod not in mbuild:
-        raise SystemExit("browser/modules/moz.build EXTRA_JS_MODULES list not found")
-    mods.write_text(mbuild.replace(needle_mod, needle_mod + '    "LyraSync.sys.mjs",\n', 1))
+if '"LyraSync.sys.mjs"' not in mbuild:
+    lines = mbuild.splitlines(keepends=True)
+    new_lines = []
+    in_modules = False
+    done = False
+    for line in lines:
+        if not done:
+            stripped = line.strip()
+            if not in_modules:
+                if stripped.startswith("EXTRA_JS_MODULES += ["):
+                    in_modules = True
+            elif stripped.startswith('"'):
+                name = stripped.strip(",").strip('"')
+                if name > "LyraSync.sys.mjs":
+                    indent = line[: len(line) - len(line.lstrip())]
+                    new_lines.append(f'{indent}"LyraSync.sys.mjs",\n')
+                    done = True
+                    in_modules = False
+            elif stripped.startswith("]"):
+                raise SystemExit(
+                    "browser/modules/moz.build EXTRA_JS_MODULES insertion point not found"
+                )
+        new_lines.append(line)
+    if not done:
+        raise SystemExit(
+            "EXTRA_JS_MODULES list not found in browser/modules/moz.build"
+        )
+    mods.write_text("".join(new_lines))
 
 prefs_js = src / "browser" / "components" / "preferences" / "preferences.js"
 ptext = prefs_js.read_text()
