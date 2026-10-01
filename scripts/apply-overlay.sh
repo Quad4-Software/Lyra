@@ -60,7 +60,7 @@ echo "overlay Void themes"
 copy_tree "$ROOT/overlay/browser/themes/addons/void-dark" "$SRC/browser/themes/addons/void-dark"
 copy_tree "$ROOT/overlay/browser/themes/addons/void-light" "$SRC/browser/themes/addons/void-light"
 
-python3 - "$SRC" <<'PY'
+PYTHONUTF8=1 python3 - "$SRC" <<'PY'
 import pathlib
 import sys
 
