@@ -26,15 +26,15 @@ sudo rm -rf \
 sudo apt-get clean || true
 sudo docker system prune -af || true
 
-# Runners ship a small 3 GB swap already. Add 24 GB regardless: the build
-# peaks past 16 GB of RAM under -j2. fallocate files can be rejected by
-# swapon on some kernels, so write the file fully with dd.
-if [[ ! -f /swapfile ]]; then
-  sudo dd if=/dev/zero of=/swapfile bs=1M count=24576 status=none
-  sudo chmod 600 /swapfile
-  sudo mkswap /swapfile
+# Runners ship a small 3 GB swapfile already active at /swapfile. Add 24 GB
+# on top at a separate path: the build peaks past 16 GB of RAM under -j2.
+SWAP=/lyra-swapfile
+if [[ ! -f $SWAP ]]; then
+  sudo dd if=/dev/zero of=$SWAP bs=1M count=24576 status=none
+  sudo chmod 600 $SWAP
+  sudo mkswap $SWAP
 fi
-sudo swapon /swapfile
+sudo swapon $SWAP
 swapon --show
 
 df -h
