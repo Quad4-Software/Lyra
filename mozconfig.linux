@@ -1,0 +1,7 @@
+# Linux host extras. Concatenate after the root mozconfig:
+#   cat mozconfig mozconfig.linux > firefox-src/mozconfig
+
+ac_add_options --enable-default-toolkit=cairo-gtk3
+ac_add_options --enable-pulseaudio
+ac_add_options --disable-eme
+ac_add_options --enable-bundled-fonts

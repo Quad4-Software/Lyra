@@ -1,0 +1,50 @@
+name: build-linux
+
+on:
+  workflow_dispatch:
+    inputs:
+      extra_mozconfig:
+        description: Extra mozconfig lines
+        required: false
+        type: string
+        default: ""
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: build-linux-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  linux:
+    name: Linux x86_64
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    permissions:
+      contents: read
+    env:
+      EXTRA_MOZCONFIG: ${{ github.event.inputs.extra_mozconfig || '' }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Free disk
+        run: bash scripts/ci-free-disk.sh
+
+      - name: Compile Lyra
+        run: bash scripts/ci-linux-build.sh
+
+      - name: Upload Linux tarball
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: lyra-linux-x86_64
+          path: out/lyra-*-linux-x86_64.tar.xz
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 14

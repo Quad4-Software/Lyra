@@ -1,0 +1,17 @@
+.cache/
+firefox-src/
+objdir/
+out/
+dist/
+*.xpi
+*.tar.xz
+*.tar.bz2
+*.tar.gz
+*.pyc
+__pycache__/
+.DS_Store
+mozconfig.local
+firefox-src/mozconfig.local
+branding/void/.gen-tmp/
+.idea/
+.vscode/

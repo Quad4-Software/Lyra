@@ -1,0 +1,44 @@
+
+
+// Copy this file to one of:
+//   $LYRA_OVERRIDES
+//   $VOID_OVERRIDES
+//   ~/.lyra/void-overrides.cfg
+//   ~/.void/void-overrides.cfg
+//   void-overrides.cfg next to the Lyra binary
+//
+// Loaded last. Use pref / defaultPref / lockPref.
+// Examples:
+
+// Crowd-identical RFP (LibreWolf / Mullvad style)
+// pref("void.fingerprint.mode", "crowd");
+
+// Keep Firefox UA while using FPP
+// pref("void.fingerprint.mode", "firefox");
+
+// Turn letterboxing on without full RFP
+// pref("privacy.resistFingerprinting.letterboxing", true);
+
+// DoH off (native OS DNS)
+// pref("network.trr.mode", 5);
+
+// DoH only, no native fallback
+// pref("network.trr.mode", 3);
+
+// Skip bundled fonts
+// pref("gfx.bundled-fonts.activate", 0);
+
+// Show all installed fonts to pages
+// pref("layout.css.font-visibility", 3);
+
+// Typing timer rounding in microseconds (1000, 20000, or 100000)
+// pref("privacy.resistFingerprinting.reduceTimerPrecision.microseconds", 100000);
+
+// Timezone spoof off (use the real local zone)
+// pref("void.timezone.spoof", false);
+
+// Allow WebRTC host ICE candidates
+// pref("void.webrtc.protect", false);
+
+// Allow geolocation
+// pref("void.geo.block", false);
