@@ -52,6 +52,18 @@ if ! command -v python3 >/dev/null; then
   exit 1
 fi
 
+# Configure looks for gmake. MozillaBuild ships it as mozmake.exe,
+# again not on PATH in a bare login shell.
+if ! command -v gmake >/dev/null && ! command -v make >/dev/null; then
+  mm="$(find /c/mozilla-build -maxdepth 3 -name 'mozmake.exe' 2>/dev/null | head -1)"
+  if [[ -n "$mm" ]]; then
+    mkdir -p "$HOME/.local/bin"
+    cp "$mm" "$HOME/.local/bin/gmake.exe"
+    cp "$mm" "$HOME/.local/bin/make.exe"
+    export PATH="$HOME/.local/bin:$PATH"
+  fi
+fi
+
 # msys tar forks to spawn xz and can hit dll base collisions on hosted
 # runners. bsdtar in System32 is a native binary and does not fork.
 if [[ -x "/c/Windows/System32/tar.exe" ]]; then
