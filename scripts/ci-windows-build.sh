@@ -217,6 +217,15 @@ if [[ ! -f "$winrs_dir/Cargo.toml" ]]; then
 fi
 export MOZ_WINDOWS_RS_DIR="$(cygpath -m "$winrs_dir")"
 
+# gkrust compiles with fat LTO and one codegen unit, needing more RAM than
+# a hosted runner has. Thin LTO plus a few codegen units still optimizes
+# well enough for a CI artifact and fits in memory.
+sed -i \
+  -e 's/cargo_rustc_flags += -Clto\$(if \$(filter full,\$(MOZ_LTO_RUST_CROSS)),=fat)/cargo_rustc_flags += -Clto=thin/' \
+  -e 's/RUSTFLAGS += -C codegen-units=1/RUSTFLAGS += -C codegen-units=4/' \
+  "$SRC/config/makefiles/rust.mk"
+grep -nE "cargo_rustc_flags \+= -Clto|codegen-units=" "$SRC/config/makefiles/rust.mk"
+
 ./mach configure
 ./mach build
 

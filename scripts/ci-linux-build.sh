@@ -54,6 +54,15 @@ cat "$ROOT/mozconfig" "$ROOT/mozconfig.linux" > "$SRC/mozconfig"
 export MOZCONFIG="$SRC/mozconfig"
 cd "$SRC"
 
+# gkrust compiles with fat LTO and one codegen unit, needing more RAM than
+# a hosted runner has even with swap. Thin LTO plus a few codegen units
+# keeps a CI artifact well optimized and fits in memory.
+sed -i \
+  -e 's/cargo_rustc_flags += -Clto\$(if \$(filter full,\$(MOZ_LTO_RUST_CROSS)),=fat)/cargo_rustc_flags += -Clto=thin/' \
+  -e 's/RUSTFLAGS += -C codegen-units=1/RUSTFLAGS += -C codegen-units=4/' \
+  "$SRC/config/makefiles/rust.mk"
+grep -nE "cargo_rustc_flags \+= -Clto|codegen-units=" "$SRC/config/makefiles/rust.mk"
+
 ./mach --no-interactive bootstrap --application-choice browser --no-system-changes
 
 run_mach() {
