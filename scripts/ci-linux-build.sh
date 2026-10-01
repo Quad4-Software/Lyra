@@ -9,8 +9,8 @@ source "$ROOT/VERSION"
 
 SRC="${LYRA_SRC:-$ROOT/firefox-src}"
 OUT="${LYRA_OUT:-$ROOT/out}"
-# 4-way rustc parallelism OOMs a 16 GB hosted runner. Keep one core back.
-JOBS="${LYRA_JOBS:-$(( $(nproc) > 1 ? $(nproc) - 1 : 1 ))}"
+# Unified bindings TUs plus rustc OOM a 16 GB hosted runner past -j2.
+JOBS="${LYRA_JOBS:-2}"
 
 export PATH="${HOME}/.cargo/bin:${PATH}"
 export MOZBUILD_STATE_PATH="${MOZBUILD_STATE_PATH:-$HOME/.mozbuild}"
@@ -20,7 +20,7 @@ umask 022
 # and disk every minute so a kill is diagnosable after the fact.
 ( while :; do
     printf 'monitor %s | ' "$(date -u +%H:%M:%S)"
-    free -m | awk 'NR==2 {printf "mem %s/%sMB ", $3, $2}'
+    free -m | awk 'NR==2 {printf "mem %s/%sMB ", $3, $2} NR==3 {printf "swap %s/%sMB ", $3, $2}'
     df -h "$ROOT" | awk 'NR==2 {printf "disk %s used, %s free\n", $3, $4}'
     sleep 60
   done ) &

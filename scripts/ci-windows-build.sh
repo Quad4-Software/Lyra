@@ -30,8 +30,11 @@ umask 022
   done ) &
 trap 'kill %1 2>/dev/null || true' EXIT
 
-# A bare msys2 login shell does not get the MozillaBuild PATH. Find its
-# bundled CPython if neither python3 nor python resolve.
+# A bare msys2 login shell does not get the MozillaBuild PATH. Its bin
+# dir holds bundled tools like nasm.
+export PATH="/c/mozilla-build/bin:$PATH"
+
+# Bundled CPython is not on PATH either. Find it under mozilla-build.
 if ! command -v python3 >/dev/null && ! command -v python >/dev/null; then
   pyexe="$(find /c/mozilla-build -maxdepth 3 \( -name 'python3.exe' -o -name 'python.exe' \) 2>/dev/null | head -1)"
   if [[ -n "$pyexe" ]]; then
@@ -83,6 +86,20 @@ for d in \
 done
 if ! command -v clang-cl >/dev/null; then
   echo "clang-cl not found on PATH or in the runner image" >&2
+  exit 1
+fi
+
+if ! command -v nasm >/dev/null; then
+  choco install nasm -y --no-progress 2>&1 | tail -3 || true
+  for d in "/c/Program Files/NASM" /c/nasm*; do
+    if [[ -x "$d/nasm.exe" ]]; then
+      export PATH="$d:$PATH"
+      break
+    fi
+  done
+fi
+if ! command -v nasm >/dev/null; then
+  echo "nasm not found" >&2
   exit 1
 fi
 
