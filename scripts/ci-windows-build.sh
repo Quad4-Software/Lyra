@@ -229,9 +229,10 @@ grep -nE "cargo_rustc_flags \+= -Clto|codegen-units=" "$SRC/config/makefiles/rus
 ./mach configure
 ./mach build
 
-BIN="$SRC/objdir/dist/bin"
+OBJDIR="$(ls -d "$SRC"/obj-*/ 2>/dev/null | head -1)"
+BIN="${OBJDIR%/}/dist/bin"
 if [[ ! -d "$BIN" ]]; then
-  echo "dist bin missing: $BIN" >&2
+  echo "dist bin missing under $SRC/obj-*" >&2
   exit 1
 fi
 

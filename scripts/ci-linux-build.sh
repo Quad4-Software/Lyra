@@ -87,9 +87,10 @@ run_mach configure
 run_mach build
 run_mach package
 
-BIN="$SRC/objdir/dist/bin"
+OBJDIR="$(ls -d "$SRC"/obj-*/ 2>/dev/null | head -1)"
+BIN="${OBJDIR%/}/dist/bin"
 if [[ ! -d "$BIN" ]]; then
-  echo "dist bin missing: $BIN" >&2
+  echo "dist bin missing under $SRC/obj-*" >&2
   exit 1
 fi
 
