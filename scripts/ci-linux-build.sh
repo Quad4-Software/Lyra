@@ -45,7 +45,13 @@ cat "$ROOT/mozconfig" "$ROOT/mozconfig.linux" > "$SRC/mozconfig"
 {
   echo "mk_add_options MOZ_MAKE_FLAGS=\"-j${JOBS}\""
   echo "mk_add_options AUTOCLOBBER=1"
-  echo "ac_add_options --with-ccache=$(command -v ccache)"
+  if command -v sccache >/dev/null; then
+    echo "ac_add_options --with-ccache=sccache"
+    echo 'mk_add_options "export RUSTC_WRAPPER=sccache"'
+    echo 'mk_add_options "export SCCACHE_IDLE_TIMEOUT=0"'
+  else
+    echo "ac_add_options --with-ccache=$(command -v ccache)"
+  fi
   if [[ -n "${EXTRA_MOZCONFIG:-}" ]]; then
     printf '%s\n' "$EXTRA_MOZCONFIG"
   fi
@@ -78,6 +84,7 @@ run_mach() {
     MOZCONFIG="$MOZCONFIG" \
     MOZBUILD_STATE_PATH="$MOZBUILD_STATE_PATH" \
     CCACHE_DIR="${CCACHE_DIR:-$HOME/.ccache}" \
+    SCCACHE_DIR="${SCCACHE_DIR:-$ROOT/.sccache}" \
     CARGO_HOME="${CARGO_HOME:-$HOME/.cargo}" \
     RUSTUP_HOME="${RUSTUP_HOME:-$HOME/.rustup}" \
     ./mach "$@"

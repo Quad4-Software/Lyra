@@ -85,10 +85,17 @@ cat "$ROOT/mozconfig" "$ROOT/mozconfig.windows" > "$SRC/mozconfig"
 {
   echo "mk_add_options MOZ_MAKE_FLAGS=\"-j${JOBS}\""
   echo "mk_add_options AUTOCLOBBER=1"
+  if command -v sccache >/dev/null; then
+    echo "ac_add_options --with-ccache=sccache"
+    echo 'mk_add_options "export RUSTC_WRAPPER=sccache"'
+    echo 'mk_add_options "export SCCACHE_IDLE_TIMEOUT=0"'
+  fi
   if [[ -n "${EXTRA_MOZCONFIG:-}" ]]; then
     printf '%s\n' "$EXTRA_MOZCONFIG"
   fi
 } >> "$SRC/mozconfig"
+
+export SCCACHE_DIR="${SCCACHE_DIR:-$ROOT/.sccache}"
 
 MOZCONFIG="$(cygpath -m "$SRC/mozconfig")"
 # Bootstrap on Windows does not fetch a compiler. Use the clang-cl that

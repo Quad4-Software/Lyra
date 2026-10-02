@@ -265,3 +265,22 @@ void-storage-group =
 void-storage-encrypt =
     .label = Encrypt profile databases at rest
     .description = Applies after restart and cannot be turned off for that profile. Cookies and site data become harder for offline tools to read.
+
+void-sync-server =
+    .label = Sync server
+    .description = WebSocket endpoint for Lyra sync. Default is wss://socket.quad4.io/ws. Point it at your own relay if you run one.
+
+void-history-group =
+    .label = History search
+    .description = Optional richer history: a dedicated page at about:lyrahistory plus local page text indexing.
+
+void-history-index =
+    .label = Index page text for history search
+    .description = Stores up to a few KB of page text locally so the history page can search inside pages. Never indexes private windows. All data stays on this machine.
+
+void-history-open =
+    .label = Open history search page
+
+void-always-private =
+    .label = Always start in private browsing
+    .description = Every window is private. History, cookies and site data are not kept between sessions.

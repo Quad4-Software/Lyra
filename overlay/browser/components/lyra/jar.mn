@@ -6,3 +6,6 @@ browser.jar:
    content/browser/lyra/setup.xhtml   (setup.xhtml)
    content/browser/lyra/setup.js      (setup.js)
    content/browser/lyra/setup.css     (setup.css)
+   content/browser/lyra/history.xhtml (history.xhtml)
+   content/browser/lyra/history.js    (history.js)
+   content/browser/lyra/history.css   (history.css)

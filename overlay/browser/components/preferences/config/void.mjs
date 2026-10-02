@@ -243,6 +243,10 @@ for (const info of [
   { id: "void.js.blocklist", type: "string" },
   { id: "void.js.allowlist", type: "string" },
   { id: "void.storage.encrypt", type: "bool" },
+  { id: "void.history.index.enabled", type: "bool" },
+  { id: "void.history.index.maxEntries", type: "int" },
+  { id: "void.sync.server", type: "string" },
+  { id: "browser.privatebrowsing.autostart", type: "bool" },
   { id: "privacy.resistFingerprinting.letterboxing", type: "bool" },
   { id: "gfx.bundled-fonts.activate", type: "int" },
   { id: "layout.css.font-visibility", type: "int" },
@@ -599,6 +603,11 @@ Preferences.addSetting({
 });
 
 Preferences.addSetting({
+  id: "voidSyncServer",
+  pref: "void.sync.server",
+});
+
+Preferences.addSetting({
   id: "voidSyncApplyTabs",
   pref: "void.sync.applyTabs",
 });
@@ -630,6 +639,26 @@ Preferences.addSetting({
 });
 
 Preferences.addSetting({ id: "voidRestartNote" });
+
+Preferences.addSetting({
+  id: "voidHistoryIndex",
+  pref: "void.history.index.enabled",
+});
+
+Preferences.addSetting({
+  id: "voidHistoryOpen",
+  onUserClick(e) {
+    e.preventDefault();
+    Services.wm
+      .getMostRecentBrowserWindow()
+      ?.openTrustedLinkIn("about:lyrahistory", "tab");
+  },
+});
+
+Preferences.addSetting({
+  id: "voidAlwaysPrivate",
+  pref: "browser.privatebrowsing.autostart",
+});
 
 try {
   SettingGroupManager.registerGroups({
@@ -902,6 +931,27 @@ try {
           l10nId: "void-storage-encrypt",
           control: "moz-checkbox",
         },
+        {
+          id: "voidAlwaysPrivate",
+          l10nId: "void-always-private",
+          control: "moz-checkbox",
+        },
+      ],
+    },
+    voidHistory: {
+      l10nId: "void-history-group",
+      headingLevel: 2,
+      items: [
+        {
+          id: "voidHistoryIndex",
+          l10nId: "void-history-index",
+          control: "moz-checkbox",
+        },
+        {
+          id: "voidHistoryOpen",
+          l10nId: "void-history-open",
+          control: "moz-box-button",
+        },
       ],
     },
     voidSync: {
@@ -922,6 +972,11 @@ try {
           id: "voidSyncBookmarks",
           l10nId: "void-sync-bookmarks",
           control: "moz-checkbox",
+        },
+        {
+          id: "voidSyncServer",
+          l10nId: "void-sync-server",
+          control: "moz-input-text",
         },
         {
           id: "voidSyncApplyTabs",

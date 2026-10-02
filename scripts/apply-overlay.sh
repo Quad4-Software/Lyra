@@ -53,6 +53,7 @@ mkdir -p "$SRC/browser/modules"
 cp -f "$ROOT/overlay/browser/modules/LyraSync.sys.mjs" "$SRC/browser/modules/LyraSync.sys.mjs"
 cp -f "$ROOT/overlay/browser/modules/LyraOpenSearch.sys.mjs" "$SRC/browser/modules/LyraOpenSearch.sys.mjs"
 cp -f "$ROOT/overlay/browser/modules/LyraScriptBlock.sys.mjs" "$SRC/browser/modules/LyraScriptBlock.sys.mjs"
+cp -f "$ROOT/overlay/browser/modules/LyraHistory.sys.mjs" "$SRC/browser/modules/LyraHistory.sys.mjs"
 cp -f "$ROOT/overlay/browser/locales/en-US/browser/lyra.ftl" "$SRC/browser/locales/en-US/browser/lyra.ftl"
 
 echo "overlay Lyra setup page"
@@ -62,7 +63,12 @@ cp -f "$ROOT/overlay/browser/components/lyra/setup.js" "$SRC/browser/components/
 cp -f "$ROOT/overlay/browser/components/lyra/setup.css" "$SRC/browser/components/lyra/setup.css"
 cp -f "$ROOT/overlay/browser/components/lyra/jar.mn" "$SRC/browser/components/lyra/jar.mn"
 cp -f "$ROOT/overlay/browser/components/lyra/moz.build" "$SRC/browser/components/lyra/moz.build"
+cp -f "$ROOT/overlay/browser/components/lyra/history.xhtml" "$SRC/browser/components/lyra/history.xhtml"
+cp -f "$ROOT/overlay/browser/components/lyra/history.js" "$SRC/browser/components/lyra/history.js"
+cp -f "$ROOT/overlay/browser/components/lyra/history.css" "$SRC/browser/components/lyra/history.css"
+cp -f "$ROOT/overlay/browser/components/lyra/LyraHistoryChild.sys.mjs" "$SRC/browser/components/lyra/LyraHistoryChild.sys.mjs"
 cp -f "$ROOT/overlay/browser/locales/en-US/browser/lyraSetup.ftl" "$SRC/browser/locales/en-US/browser/lyraSetup.ftl"
+cp -f "$ROOT/overlay/browser/locales/en-US/browser/lyraHistory.ftl" "$SRC/browser/locales/en-US/browser/lyraHistory.ftl"
 
 echo "overlay bundled CDN libs"
 cp -f "$ROOT/extensions/decentraleyes-libs/"*.js "$SRC/browser/extensions/webcompat/shims/"
@@ -342,6 +348,11 @@ if "LyraScriptBlock.init" not in gtext:
         gtext.rstrip()
         + "\ncategory browser-before-ui-startup resource:///modules/LyraScriptBlock.sys.mjs LyraScriptBlock.init\n"
     )
+if "LyraHistory.init" not in gtext:
+    gtext = (
+        gtext.rstrip()
+        + "\ncategory browser-before-ui-startup resource:///modules/LyraHistory.sys.mjs LyraHistory.init\n"
+    )
 glue.write_text(gtext)
 
 # Unlock the profile database encryption pref so users can opt in.
@@ -356,7 +367,7 @@ elif unlocked not in atext2:
 
 mods = src / "browser" / "modules" / "moz.build"
 mbuild = mods.read_text()
-for mod_name in ("LyraOpenSearch.sys.mjs", "LyraScriptBlock.sys.mjs", "LyraSync.sys.mjs"):
+for mod_name in ("LyraHistory.sys.mjs", "LyraOpenSearch.sys.mjs", "LyraScriptBlock.sys.mjs", "LyraSync.sys.mjs"):
     if f'"{mod_name}"' in mbuild:
         continue
     lines = mbuild.splitlines(keepends=True)
@@ -403,6 +414,7 @@ void_pane = """  voidPrivacy: {
       "voidProtections",
       "voidScripts",
       "voidStorage",
+      "voidHistory",
       "voidSync",
       "voidCompat",
     ],
@@ -424,7 +436,8 @@ if '"voidProtections"' not in ptext:
     ptext = ptext.replace(
         '"voidDns",\n',
         '"voidDns",\n      "voidProtections",\n'
-        '      "voidScripts",\n      "voidStorage",\n',
+        '      "voidScripts",\n      "voidStorage",\n'
+        '      "voidHistory",\n',
         1,
     )
 ptext = ptext.replace(
@@ -642,29 +655,36 @@ lyra-tab-context-set-search-default =
 """
     )
 
-# about:lyrasetup first-run page.
+# about:lyrasetup first-run page and about:lyrahistory search page.
 redir = src / "browser" / "components" / "about" / "AboutRedirector.cpp"
 rtext = redir.read_text()
-if '"lyrasetup"' not in rtext:
+for page, target in (
+    ("lyrasetup", "lyra/setup.xhtml"),
+    ("lyrahistory", "lyra/history.xhtml"),
+):
+    if f'"{page}"' in rtext:
+        continue
     needle = '    {"welcomeback",'
     if needle not in rtext:
         raise SystemExit("AboutRedirector insertion point not found")
     rtext = rtext.replace(
         needle,
-        '    {"lyrasetup", "chrome://browser/content/lyra/setup.xhtml",\n'
+        f'    {{"{page}", "chrome://browser/content/{target}",\n'
         "     nsIAboutModule::ALLOW_SCRIPT | nsIAboutModule::IS_SECURE_CHROME_UI},\n"
         + needle,
         1,
     )
-    redir.write_text(rtext)
+redir.write_text(rtext)
 
 aconf = src / "browser" / "components" / "about" / "components.conf"
 actext = aconf.read_text()
-if "'lyrasetup'" not in actext:
-    needle = "    'logins',\n"
-    if needle not in actext:
-        raise SystemExit("about components.conf insertion point not found")
-    aconf.write_text(actext.replace(needle, needle + "    'lyrasetup',\n", 1))
+for page in ("'lyrahistory'", "'lyrasetup'"):
+    if page not in actext:
+        needle = "    'logins',\n"
+        if needle not in actext:
+            raise SystemExit("about components.conf insertion point not found")
+        actext = actext.replace(needle, needle + "    " + page + ",\n", 1)
+aconf.write_text(actext)
 
 # Page files packaged via a jar.mn in the lyra component dir. DIRS must
 # stay sorted; "lyra" lands between "ipprotection" and "messagepreview".

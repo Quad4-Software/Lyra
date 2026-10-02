@@ -94,6 +94,42 @@ and cannot be raced by realpath tricks. It cannot replace the broker
 (sockets, exec, dynamic paths), so the realistic shape is a layered deny.
 Tractable follow-up, not a config-only change.
 
+## uBlock Origin defaults
+
+uBO ships force-installed and admin-configured through the Firefox
+3rdparty policy. The managed settings enable the stock lists plus
+block-lan (uBO's LAN intrusion list, same theme as the LNA section),
+ublock-annoyances and fanboy-cookiemonster, with hyperlink auditing and
+prefetching disabled inside the extension. The policy overrides user
+choices on launch; point the policy at your own JSON if you want a
+different baseline.
+
+## Vanadium portability notes
+
+Vanadium's headline features are GrapheneOS-specific (hardened_malloc,
+exec-based spawning, kernel-level isolation) and do not port to desktop
+Firefox. The concepts that did port, and their Lyra status:
+
+- Always-incognito browsing: browser.privatebrowsing.autostart, opt-in
+  toggle in Settings.
+- Localhost/LAN protection: the LNA section plus uBO's block-lan list.
+- HTTPS-only including private windows: https_only_mode_pbm.
+- HTTP basic auth in subresources blocked:
+  network.auth.subresource-http-auth-allow=1.
+- TLS 1.3 early data off (replay hardening): security.tls.enable_0rtt_data.
+- Web Push off: dom.push.enabled=false.
+- Battery API, beacon, sensors, gamepad, DNS prefetch, speculative
+  connections: all off, matching or stricter than Vanadium defaults.
+
+## History search
+
+about:lyrahistory is a dedicated search page over Places plus an optional
+local text index (LyraHistory module, content actor captures up to 8 KB of
+normalized page text per top-level http(s) page into
+profile/lyra-history-index.json). Opt-in via void.history.index.enabled;
+never indexes private windows; wiped with clear-history. This replaces
+running an external indexer like hister.
+
 ## Search and surfaces
 
 - Default engines: Brave Search (default), Wiby, SearXNG (searx.be,

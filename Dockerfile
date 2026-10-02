@@ -37,6 +37,8 @@ RUN ./scripts/fetch-firefox.sh firefox-src \
  && ./extensions/ublock/fetch.sh
 
 FROM source AS toolchain
+RUN curl -sSf https://sh.rustup.rs | sh -s -- -y -q --profile minimal --default-toolchain stable
+ENV PATH=/home/builder/.cargo/bin:/home/builder/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 RUN cat mozconfig mozconfig.linux > firefox-src/mozconfig \
  && cd firefox-src \
  && MOZCONFIG=/home/builder/lyra/firefox-src/mozconfig \

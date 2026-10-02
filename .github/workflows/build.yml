@@ -48,6 +48,35 @@ jobs:
       - name: Free disk
         run: bash scripts/ci-free-disk.sh
 
+      - name: Cache source and toolchains
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            .cache
+            ~/.mozbuild
+          key: lyra-src-${{ hashFiles('VERSION') }}
+          restore-keys: lyra-src-
+
+      - name: Cache compiler output
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: .sccache
+          key: sccache-linux-${{ github.ref }}-${{ hashFiles('VERSION', 'mozconfig', 'mozconfig.linux') }}
+          restore-keys: |
+            sccache-linux-${{ github.ref }}-
+            sccache-linux-
+
+      - name: Install sccache
+        run: |
+          curl -sfL --retry 3 \
+            "https://github.com/mozilla/sccache/releases/download/v0.18.0/sccache-v0.18.0-x86_64-unknown-linux-musl.tar.gz" \
+            -o /tmp/sccache.tgz
+          echo "45f1447fbe231e3037bde351ef70677dd212216c8d62ae7ca409fecc4d6acc89  /tmp/sccache.tgz" | sha256sum -c
+          tar -xzf /tmp/sccache.tgz -C /tmp
+          mkdir -p "$HOME/.local/bin"
+          install -m755 /tmp/sccache-v0.18.0-x86_64-unknown-linux-musl/sccache "$HOME/.local/bin/"
+          echo "SCCACHE_DIR=$GITHUB_WORKSPACE/.sccache" >> "$GITHUB_ENV"
+
       - name: Compile Lyra
         run: bash scripts/ci-linux-build.sh
 
@@ -101,6 +130,42 @@ jobs:
           Write-Output "MozillaBuild bash: $($bash.FullName)"
           $rebase = 'C:\mozilla-build\msys2\autorebase.bat'
           if (Test-Path $rebase) { & cmd /c $rebase }
+
+      - name: Cache source and toolchains
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            .cache
+            ~/.mozbuild
+          key: lyra-src-${{ hashFiles('VERSION') }}
+          restore-keys: lyra-src-
+
+      - name: Cache compiler output
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: .sccache
+          key: sccache-win-${{ github.ref }}-${{ hashFiles('VERSION', 'mozconfig', 'mozconfig.windows') }}
+          restore-keys: |
+            sccache-win-${{ github.ref }}-
+            sccache-win-
+
+      - name: Install sccache
+        shell: pwsh
+        run: |
+          $tgz = "$env:RUNNER_TEMP\sccache.tgz"
+          Invoke-WebRequest -Uri "https://github.com/mozilla/sccache/releases/download/v0.18.0/sccache-v0.18.0-x86_64-pc-windows-msvc.tar.gz" -OutFile $tgz
+          $hash = (Get-FileHash $tgz -Algorithm SHA256).Hash.ToLower()
+          if ($hash -ne "1a63c1be2beab3f04d27e4cc145443e092e02d3dd83a51030989829d7023091b") {
+            throw "sccache hash mismatch: $hash"
+          }
+          tar -xzf $tgz -C $env:RUNNER_TEMP
+          $exe = Get-ChildItem "$env:RUNNER_TEMP" -Recurse -Filter 'sccache.exe' | Select-Object -First 1
+          $dest = "$env:RUNNER_TEMP\sccache-bin"
+          New-Item -ItemType Directory -Force $dest | Out-Null
+          Copy-Item $exe.FullName "$dest\sccache.exe"
+          $msys = $dest -replace '\\','/' -replace '^([A-Za-z]):', { '/' + $args[0].Groups[1].Value.ToLower() }
+          $msys >> $env:GITHUB_PATH
+          "SCCACHE_DIR=$env:GITHUB_WORKSPACE\.sccache" >> $env:GITHUB_ENV
 
       - name: Compile Lyra
         shell: pwsh

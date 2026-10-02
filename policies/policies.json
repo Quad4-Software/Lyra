@@ -77,9 +77,16 @@
         "eBay",
         "Twitter"
       ],
-      "Default": "DuckDuckGo"
+      "Default": "Brave Search"
     },
     "SearchSuggestEnabled": false,
+    "3rdparty": {
+      "Extensions": {
+        "uBlock0@raymondhill.net": {
+          "adminSettings": "{\"selectedFilterLists\":[\"user-filters\",\"ublock-filters\",\"ublock-badware\",\"ublock-privacy\",\"ublock-abuse\",\"ublock-unbreak\",\"ublock-quick-fixes\",\"easylist\",\"easyprivacy\",\"urlhaus-1\",\"plowe-0\",\"block-lan\",\"ublock-annoyances\",\"fanboy-cookiemonster\"],\"userSettings\":{\"hyperlinkAuditingDisabled\":true,\"prefetchingDisabled\":true}}"
+        }
+      }
+    },
     "Extensions": {
       "Uninstall": [
         "google@search.mozilla.org",
