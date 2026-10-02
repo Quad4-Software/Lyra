@@ -167,7 +167,8 @@ jobs:
           $dest = "$env:RUNNER_TEMP\sccache-bin"
           New-Item -ItemType Directory -Force $dest | Out-Null
           Copy-Item $exe.FullName "$dest\sccache.exe"
-          $msys = $dest -replace '\\','/' -replace '^([A-Za-z]):', { '/' + $args[0].Groups[1].Value.ToLower() }
+          $msys = ($dest -replace '\\','/')
+          $msys = '/' + $msys.Substring(0,1).ToLower() + $msys.Substring(2)
           $msys >> $env:GITHUB_PATH
           "SCCACHE_DIR=$env:GITHUB_WORKSPACE\.sccache" >> $env:GITHUB_ENV
 
