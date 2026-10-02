@@ -50,6 +50,7 @@ jobs:
 
       - name: Cache source and toolchains
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        # zizmor: ignore[cache-poisoning] tags and dispatch both need write access; no PR/fork trigger can write these caches
         with:
           path: |
             .cache
@@ -59,6 +60,7 @@ jobs:
 
       - name: Cache compiler output
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        # zizmor: ignore[cache-poisoning] tags and dispatch both need write access; no PR/fork trigger can write these caches
         with:
           path: .sccache
           key: sccache-linux-${{ github.ref }}-${{ hashFiles('VERSION', 'mozconfig', 'mozconfig.linux') }}
@@ -133,6 +135,7 @@ jobs:
 
       - name: Cache source and toolchains
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        # zizmor: ignore[cache-poisoning] tags and dispatch both need write access; no PR/fork trigger can write these caches
         with:
           path: |
             .cache
@@ -142,6 +145,7 @@ jobs:
 
       - name: Cache compiler output
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        # zizmor: ignore[cache-poisoning] tags and dispatch both need write access; no PR/fork trigger can write these caches
         with:
           path: .sccache
           key: sccache-win-${{ github.ref }}-${{ hashFiles('VERSION', 'mozconfig', 'mozconfig.windows') }}
