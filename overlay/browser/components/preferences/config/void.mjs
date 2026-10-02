@@ -15,6 +15,12 @@ const FPP_BASE = [
   "+FontVisibilityBaseSystem",
   "+JSMathFdlibm",
   "+ScreenAvailToResolution",
+  "+ScreenRect",
+  "+ScreenAvailRect",
+  "+ScreenOrientation",
+  "+WindowScreenXY",
+  "+WindowInnerScreenXY",
+  "+WindowDevicePixelRatio",
   "+NavigatorHWConcurrencyTiered",
   "+MaxTouchPointsCollapse",
   "+SpeechSynthesis",
@@ -73,7 +79,7 @@ function buildFppOverrides() {
   if (Services.prefs.getBoolPref("void.typing.protection", true)) {
     parts.push("+KeyboardEvents", "+ReduceTimerPrecision", "+WidgetEvents");
   }
-  if (Services.prefs.getBoolPref("void.window.buckets", false)) {
+  if (Services.prefs.getBoolPref("void.window.buckets", true)) {
     parts.push("+RoundWindowSize");
   }
   if (Services.prefs.getBoolPref("void.timezone.spoof", true)) {
@@ -197,7 +203,7 @@ function applyUa() {
 
 function applyVoidMode() {
   const mode = currentMode();
-  const buckets = Services.prefs.getBoolPref("void.window.buckets", false);
+  const buckets = Services.prefs.getBoolPref("void.window.buckets", true);
   const restrictFonts = Services.prefs.getBoolPref("void.fonts.restrict", true);
   const typing = Services.prefs.getBoolPref("void.typing.protection", true);
   if (mode === "crowd") {
