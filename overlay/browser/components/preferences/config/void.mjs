@@ -132,6 +132,37 @@ function applyLan(block) {
   Services.prefs.setBoolPref("network.lna.block_insecure_contexts", block);
 }
 
+function applySafest(on) {
+  for (const p of [
+    "javascript.options.ion",
+    "javascript.options.baselinejit",
+    "javascript.options.wasm",
+    "javascript.options.wasm_optimizingjit",
+    "javascript.options.wasm_baselinejit",
+  ]) {
+    Services.prefs.setBoolPref(p, !on);
+  }
+}
+
+function applyPermBlock(on) {
+  for (const p of ["camera", "microphone", "desktop-notification"]) {
+    Services.prefs.setIntPref(`permissions.default.${p}`, on ? 2 : 0);
+  }
+}
+
+function applyClearOnExit() {
+  const any =
+    Services.prefs.getBoolPref("privacy.clearOnShutdown.cookies", false) ||
+    Services.prefs.getBoolPref("privacy.clearOnShutdown.cache", false) ||
+    Services.prefs.getBoolPref("privacy.clearOnShutdown.history", false) ||
+    Services.prefs.getBoolPref("privacy.clearOnShutdown.formdata", false) ||
+    Services.prefs.getBoolPref("privacy.clearOnShutdown.sessions", false);
+  Services.prefs.setBoolPref(
+    "privacy.sanitize.sanitizeOnShutdown",
+    any
+  );
+}
+
 const UA_STRINGS = {
   "firefox-win":
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:140.0) Gecko/20100101 Firefox/140.0",
@@ -207,6 +238,12 @@ function applyVoidMode() {
   applySensors(Services.prefs.getBoolPref("void.sensors.block", true));
   applyGeo(Services.prefs.getBoolPref("void.geo.block", true));
   applyLan(Services.prefs.getBoolPref("void.lan.block", true));
+  applySafest(Services.prefs.getBoolPref("void.safest", false));
+  applyPermBlock(Services.prefs.getBoolPref("void.permissions.block", false));
+  Services.prefs.setBoolPref(
+    "privacy.firstparty.isolate",
+    Services.prefs.getBoolPref("void.fpi", false)
+  );
   applyUa();
 }
 
@@ -247,6 +284,15 @@ for (const info of [
   { id: "void.history.index.maxEntries", type: "int" },
   { id: "void.sync.server", type: "string" },
   { id: "browser.privatebrowsing.autostart", type: "bool" },
+  { id: "void.safest", type: "bool" },
+  { id: "void.permissions.block", type: "bool" },
+  { id: "void.fpi", type: "bool" },
+  { id: "void.update.check", type: "bool" },
+  { id: "privacy.clearOnShutdown.cookies", type: "bool" },
+  { id: "privacy.clearOnShutdown.cache", type: "bool" },
+  { id: "privacy.clearOnShutdown.history", type: "bool" },
+  { id: "privacy.clearOnShutdown.formdata", type: "bool" },
+  { id: "privacy.clearOnShutdown.sessions", type: "bool" },
   { id: "privacy.resistFingerprinting.letterboxing", type: "bool" },
   { id: "gfx.bundled-fonts.activate", type: "int" },
   { id: "layout.css.font-visibility", type: "int" },
@@ -660,6 +706,51 @@ Preferences.addSetting({
   pref: "browser.privatebrowsing.autostart",
 });
 
+Preferences.addSetting({
+  id: "voidSafest",
+  pref: "void.safest",
+  onUserChange(checked) {
+    applySafest(checked);
+  },
+});
+
+Preferences.addSetting({
+  id: "voidPermissionsBlock",
+  pref: "void.permissions.block",
+  onUserChange(checked) {
+    applyPermBlock(checked);
+  },
+});
+
+Preferences.addSetting({
+  id: "voidFpi",
+  pref: "void.fpi",
+  onUserChange(checked) {
+    Services.prefs.setBoolPref("privacy.firstparty.isolate", checked);
+  },
+});
+
+for (const [id, pref] of [
+  ["voidClearCookies", "privacy.clearOnShutdown.cookies"],
+  ["voidClearCache", "privacy.clearOnShutdown.cache"],
+  ["voidClearHistory", "privacy.clearOnShutdown.history"],
+  ["voidClearFormdata", "privacy.clearOnShutdown.formdata"],
+  ["voidClearSessions", "privacy.clearOnShutdown.sessions"],
+]) {
+  Preferences.addSetting({
+    id,
+    pref,
+    onUserChange() {
+      applyClearOnExit();
+    },
+  });
+}
+
+Preferences.addSetting({
+  id: "voidUpdateCheck",
+  pref: "void.update.check",
+});
+
 try {
   SettingGroupManager.registerGroups({
     voidFingerprint: {
@@ -885,6 +976,16 @@ try {
           l10nId: "void-lan-block",
           control: "moz-checkbox",
         },
+        {
+          id: "voidPermissionsBlock",
+          l10nId: "void-permissions-block",
+          control: "moz-checkbox",
+        },
+        {
+          id: "voidFpi",
+          l10nId: "void-fpi",
+          control: "moz-checkbox",
+        },
       ],
     },
     voidScripts: {
@@ -920,6 +1021,11 @@ try {
           l10nId: "void-js-allowlist",
           control: "moz-input-text",
         },
+        {
+          id: "voidSafest",
+          l10nId: "void-safest",
+          control: "moz-checkbox",
+        },
       ],
     },
     voidStorage: {
@@ -951,6 +1057,42 @@ try {
           id: "voidHistoryOpen",
           l10nId: "void-history-open",
           control: "moz-box-button",
+        },
+      ],
+    },
+    voidWipe: {
+      l10nId: "void-wipe-group",
+      headingLevel: 2,
+      items: [
+        {
+          id: "voidClearCookies",
+          l10nId: "void-clear-cookies",
+          control: "moz-checkbox",
+        },
+        {
+          id: "voidClearCache",
+          l10nId: "void-clear-cache",
+          control: "moz-checkbox",
+        },
+        {
+          id: "voidClearHistory",
+          l10nId: "void-clear-history",
+          control: "moz-checkbox",
+        },
+        {
+          id: "voidClearFormdata",
+          l10nId: "void-clear-formdata",
+          control: "moz-checkbox",
+        },
+        {
+          id: "voidClearSessions",
+          l10nId: "void-clear-sessions",
+          control: "moz-checkbox",
+        },
+        {
+          id: "voidUpdateCheck",
+          l10nId: "void-update-check",
+          control: "moz-checkbox",
         },
       ],
     },

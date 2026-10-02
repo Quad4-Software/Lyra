@@ -7,3 +7,7 @@
 lyra-search-offer-message = { $engine } offers a search engine you can install.
 lyra-search-offer-add = Add Search Engine
 lyra-search-offer-dismiss = Not Now
+
+lyra-update-available = Lyra { $version } is available
+lyra-update-download = Download
+lyra-update-dismiss = Not now

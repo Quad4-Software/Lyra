@@ -54,6 +54,7 @@ cp -f "$ROOT/overlay/browser/modules/LyraSync.sys.mjs" "$SRC/browser/modules/Lyr
 cp -f "$ROOT/overlay/browser/modules/LyraOpenSearch.sys.mjs" "$SRC/browser/modules/LyraOpenSearch.sys.mjs"
 cp -f "$ROOT/overlay/browser/modules/LyraScriptBlock.sys.mjs" "$SRC/browser/modules/LyraScriptBlock.sys.mjs"
 cp -f "$ROOT/overlay/browser/modules/LyraHistory.sys.mjs" "$SRC/browser/modules/LyraHistory.sys.mjs"
+cp -f "$ROOT/overlay/browser/modules/LyraUpdateCheck.sys.mjs" "$SRC/browser/modules/LyraUpdateCheck.sys.mjs"
 cp -f "$ROOT/overlay/browser/locales/en-US/browser/lyra.ftl" "$SRC/browser/locales/en-US/browser/lyra.ftl"
 
 echo "overlay Lyra setup page"
@@ -353,6 +354,11 @@ if "LyraHistory.init" not in gtext:
         gtext.rstrip()
         + "\ncategory browser-before-ui-startup resource:///modules/LyraHistory.sys.mjs LyraHistory.init\n"
     )
+if "LyraUpdateCheck.init" not in gtext:
+    gtext = (
+        gtext.rstrip()
+        + "\ncategory browser-first-window-ready resource:///modules/LyraUpdateCheck.sys.mjs LyraUpdateCheck.init\n"
+    )
 glue.write_text(gtext)
 
 # Unlock the profile database encryption pref so users can opt in.
@@ -367,7 +373,7 @@ elif unlocked not in atext2:
 
 mods = src / "browser" / "modules" / "moz.build"
 mbuild = mods.read_text()
-for mod_name in ("LyraHistory.sys.mjs", "LyraOpenSearch.sys.mjs", "LyraScriptBlock.sys.mjs", "LyraSync.sys.mjs"):
+for mod_name in ("LyraHistory.sys.mjs", "LyraOpenSearch.sys.mjs", "LyraScriptBlock.sys.mjs", "LyraSync.sys.mjs", "LyraUpdateCheck.sys.mjs"):
     if f'"{mod_name}"' in mbuild:
         continue
     lines = mbuild.splitlines(keepends=True)
@@ -415,6 +421,7 @@ void_pane = """  voidPrivacy: {
       "voidScripts",
       "voidStorage",
       "voidHistory",
+      "voidWipe",
       "voidSync",
       "voidCompat",
     ],
@@ -436,8 +443,19 @@ if '"voidProtections"' not in ptext:
     ptext = ptext.replace(
         '"voidDns",\n',
         '"voidDns",\n      "voidProtections",\n'
-        '      "voidScripts",\n      "voidStorage",\n'
-        '      "voidHistory",\n',
+        '      "voidScripts",\n      "voidStorage",\n',
+        1,
+    )
+if '"voidHistory"' not in ptext:
+    ptext = ptext.replace(
+        '"voidStorage",\n',
+        '"voidStorage",\n      "voidHistory",\n      "voidWipe",\n',
+        1,
+    )
+elif '"voidWipe"' not in ptext:
+    ptext = ptext.replace(
+        '"voidHistory",\n',
+        '"voidHistory",\n      "voidWipe",\n',
         1,
     )
 ptext = ptext.replace(

@@ -284,3 +284,38 @@ void-history-open =
 void-always-private =
     .label = Always start in private browsing
     .description = Every window is private. History, cookies and site data are not kept between sessions.
+
+void-permissions-block =
+    .label = Block camera, mic and notification prompts
+    .description = Sites cannot ask for these permissions at all. Change per-site in the address bar.
+
+void-fpi =
+    .label = Isolate every site (first-party isolation)
+    .description = Strongest isolation: every origin gets its own storage, cache and credentials. Expect breakage on logins and embedded content.
+
+void-safest =
+    .label = Disable JavaScript JIT and WebAssembly
+    .description = Largest single exploit-surface reduction available. Sites still run scripts but much slower. Applies after restart.
+
+void-wipe-group =
+    .label = Clear data on exit
+    .description = Chosen categories are wiped when the browser closes.
+
+void-clear-cookies =
+    .label = Cookies and site data
+
+void-clear-cache =
+    .label = Cached pages and files
+
+void-clear-history =
+    .label = Browsing history
+
+void-clear-formdata =
+    .label = Form history
+
+void-clear-sessions =
+    .label = Active sessions
+
+void-update-check =
+    .label = Check for Lyra updates
+    .description = One request to github.com at startup, once per version. No data is sent. App auto-update stays off.

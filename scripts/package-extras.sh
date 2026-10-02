@@ -25,6 +25,7 @@ mkdir -p "$EXT_DIR" "$DIST/distribution" "$DIST/defaults/pref"
 cp -f "$ROOT/policies/policies.json" "$DIST/distribution/policies.json"
 cp -f "$ROOT/overlay/browser/app/distribution/distribution.ini" "$DIST/distribution/distribution.ini"
 cp -f "$ROOT/prefs/void.cfg" "$DIST/void.cfg"
+printf 'defaultPref("lyra.version", "%s");\n' "$VOID_VERSION" >> "$DIST/void.cfg"
 cp -f "$ROOT/prefs/autoconfig.js" "$DIST/defaults/pref/void-settings.js"
 cp -f "$ROOT/prefs/void-overrides.cfg.example" "$DIST/void-overrides.cfg.example"
 if [[ -f "$DIST/browser/defaults/preferences/firefox-branding.js" ]]; then
