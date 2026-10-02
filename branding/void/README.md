@@ -1,1 +1,1 @@
-Lyra / Firefox branding. See docs/BRANDING.md.
+Lyra / Firefox branding.

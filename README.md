@@ -51,7 +51,6 @@ GitHub Actions:
 | `mozconfig.windows` | Windows extras |
 | `patches/` | Documented source edits |
 | `scripts/` | Fetch, overlay, package, CI, validate |
-| `docs/` | Build, branding, privacy, ESR bumps |
 
 ## License
 
