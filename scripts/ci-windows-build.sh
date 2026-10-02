@@ -277,5 +277,26 @@ else
 fi
 rm -rf "$STAGE"
 
+# The zip must contain plain files only: no symlinks and nothing
+# referencing the runner workspace.
+python3 - "$ZIP" <<'PYEOF'
+import sys
+import zipfile
+
+zf = zipfile.ZipFile(sys.argv[1])
+bad = []
+for info in zf.infolist():
+    mode = (info.external_attr >> 16) & 0o170000
+    if mode == 0o120000:
+        bad.append(("symlink", info.filename))
+    if info.filename.startswith("/") or ":" in info.filename.split("/")[0]:
+        bad.append(("absolute", info.filename))
+if bad:
+    for kind, name in bad[:20]:
+        print(f"bad entry: {kind} {name}", file=sys.stderr)
+    sys.exit(1)
+print(f"zip ok: {len(zf.infolist())} entries")
+PYEOF
+
 ls -lh "$OUT"
 echo "artifact $ZIP"

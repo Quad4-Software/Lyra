@@ -84,6 +84,27 @@ Check:
 - uBlock Origin is present
 - Settings has a Lyra pane
 
+## Container build
+
+`Dockerfile` builds Lyra in a rootless container with podman (or docker):
+
+```
+podman build --output type=local,dest=out .
+```
+
+That writes `out/lyra-<version>-linux-x86_64.tar.xz`. Stages: base
+(apt deps), source (fetch + overlay + uBlock), toolchain (mach
+bootstrap), build (`scripts/container-build.sh`), artifact (tarball
+only). To keep the full builder image instead:
+
+```
+podman build --target build -t lyra-build .
+podman run --rm -it lyra-build bash
+```
+
+`JOBS` is a build arg (`--build-arg JOBS=8`). `.dockerignore` excludes
+`firefox-src/`, `out/` and other large local paths from the context.
+
 ## CI
 
 `validate.yml` runs `scripts/validate.py` and zizmor on push and pull request.

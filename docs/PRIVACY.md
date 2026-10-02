@@ -23,11 +23,11 @@ probed localhost ports from web content to link web identities to app
 accounts (the "Bridges to Self" / localmess research). Meta used STUN/SDP
 munging to a local UDP listener; Yandex ran an HTTP server on known ports.
 
-Known gap: Gecko's WebRTC stack does not enforce LNA on STUN traffic. Our
-WebRTC hardening prefs (ice.no_host, default_address_only) reduce the
-surface but do not fully close the SDP-munged STUN vector. A future fix
-would reject ice-ufrag/ice-pwd rewriting in setLocalDescription like
-Chrome 137+ does.
+WebRTC residual: loopback UDP socket binds are refused by
+media.peerconnection.ice.loopback=false, which kills Meta's STUN-to-localhost
+path at the socket level. Private (non-loopback) STUN targets are a
+thinner slice; SDP munging of ice-ufrag/ice-pwd is not separately rejected
+the way Chrome 137+ does it.
 
 ## Script blocking (NoScript-lite)
 

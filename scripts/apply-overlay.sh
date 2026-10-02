@@ -678,11 +678,13 @@ if '"lyra"' not in cmtext:
     components_mozbuild.write_text(cmtext)
 
 # Decentraleyes-style local substitutions for common CDN libraries.
+import re
 shimsjs = src / "browser" / "extensions" / "webcompat" / "data" / "shims.js"
 stext = shimsjs.read_text()
-if "LyraCdnJquery" not in stext:
+stext = re.sub(r"  \{\n    id: \"LyraCdn[\s\S]*?  \},\n", "", stext)
+if True:
     entries = ""
-    for v in ("3.7.1", "3.6.0", "3.5.1", "2.2.4", "1.12.4"):
+    for v in ("3.7.1", "3.6.0", "3.5.1", "3.4.1", "2.2.4", "1.12.4", "1.11.3"):
         entries += (
             "  {\n"
             '    id: "LyraCdnJquery-' + v + '",\n'
@@ -708,6 +710,17 @@ if "LyraCdnJquery" not in stext:
         '      "*://cdn.jsdelivr.net/npm/underscore@1.13.6/underscore-min.js*",\n'
         "    ],\n"
         "  },\n"
+        "  {\n"
+        '    id: "LyraCdnBackbone",\n'
+        '    platform: "all",\n'
+        '    name: "Backbone.js 1.4.1 (local)",\n'
+        '    file: "lyra-backbone-1.4.1.min.js",\n'
+        "    matches: [\n"
+        '      "*://cdnjs.cloudflare.com/ajax/libs/backbone.js/1.4.1/backbone-min.js*",\n'
+        '      "*://cdn.jsdelivr.net/npm/backbone@1.4.1/backbone-min.js*",\n'
+        '      "*://unpkg.com/backbone@1.4.1/backbone-min.js*",\n'
+        "    ],\n"
+        "  },\n"
     )
     needle = "];\n\nif (typeof module"
     if needle not in stext:
@@ -716,10 +729,15 @@ if "LyraCdnJquery" not in stext:
 
 manifest = src / "browser" / "extensions" / "webcompat" / "manifest.json"
 mtext = manifest.read_text()
-if "shims/lyra-jquery-3.7.1.min.js" not in mtext:
+mtext = re.sub(r'\n\s+"shims/lyra-[^"]+",?', "", mtext)
+mtext = re.sub(r",(\s*\])", r"\1", mtext)
+if True:
     lines = [
+        '"shims/lyra-backbone-1.4.1.min.js"',
+        '"shims/lyra-jquery-1.11.3.min.js"',
         '"shims/lyra-jquery-1.12.4.min.js"',
         '"shims/lyra-jquery-2.2.4.min.js"',
+        '"shims/lyra-jquery-3.4.1.min.js"',
         '"shims/lyra-jquery-3.5.1.min.js"',
         '"shims/lyra-jquery-3.6.0.min.js"',
         '"shims/lyra-jquery-3.7.1.min.js"',
@@ -805,6 +823,48 @@ if not any(r.get("identifier") == "brave" for r in keep):
             r["globalDefault"] = "brave"
     scfg_data["data"] = keep
     scfg.write_text(json.dumps(scfg_data, indent=1) + "\n")
+
+# Remote settings can re-add dropped engines after sync, so the selector
+# filters them out at runtime as well.
+ses = src / "toolkit" / "components" / "search" / "SearchEngineSelector.sys.mjs"
+setext = ses.read_text()
+LYRA_ENGINE_FILTER = """    refinedSearchConfig.engines = refinedSearchConfig.engines.filter(
+      e => !/^(perplexity|wikipedia)/.test(e.identifier)
+    );
+"""
+if "perplexity|wikipedia" not in setext:
+    needle = """    refinedSearchConfig.engines = refinedSearchConfig.engines.filter(
+      e => !e.optional
+    );
+"""
+    if needle not in setext:
+        raise SystemExit("SearchEngineSelector filter point not found")
+    setext = setext.replace(needle, needle + LYRA_ENGINE_FILTER, 1)
+
+needle2 = """    for (let config of this.#configuration) {
+      if (config.recordType !== "engine") {
+        continue;
+      }
+      let searchHost"""
+if "lyraRemovedEngine" not in setext:
+    if needle2 not in setext:
+        raise SystemExit("SearchEngineSelector contextual host loop not found")
+    setext = setext.replace(
+        needle2,
+        """    for (let config of this.#configuration) {
+      if (config.recordType !== "engine") {
+        continue;
+      }
+      const lyraRemovedEngine = /^(perplexity|wikipedia)/.test(
+        config.identifier
+      );
+      if (lyraRemovedEngine) {
+        continue;
+      }
+      let searchHost""",
+        1,
+    )
+ses.write_text(setext)
 
 print("source tree edits applied")
 PY
