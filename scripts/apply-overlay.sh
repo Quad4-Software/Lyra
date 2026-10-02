@@ -52,7 +52,20 @@ echo "overlay Lyra sync module"
 mkdir -p "$SRC/browser/modules"
 cp -f "$ROOT/overlay/browser/modules/LyraSync.sys.mjs" "$SRC/browser/modules/LyraSync.sys.mjs"
 cp -f "$ROOT/overlay/browser/modules/LyraOpenSearch.sys.mjs" "$SRC/browser/modules/LyraOpenSearch.sys.mjs"
+cp -f "$ROOT/overlay/browser/modules/LyraScriptBlock.sys.mjs" "$SRC/browser/modules/LyraScriptBlock.sys.mjs"
 cp -f "$ROOT/overlay/browser/locales/en-US/browser/lyra.ftl" "$SRC/browser/locales/en-US/browser/lyra.ftl"
+
+echo "overlay Lyra setup page"
+mkdir -p "$SRC/browser/components/lyra"
+cp -f "$ROOT/overlay/browser/components/lyra/setup.xhtml" "$SRC/browser/components/lyra/setup.xhtml"
+cp -f "$ROOT/overlay/browser/components/lyra/setup.js" "$SRC/browser/components/lyra/setup.js"
+cp -f "$ROOT/overlay/browser/components/lyra/setup.css" "$SRC/browser/components/lyra/setup.css"
+cp -f "$ROOT/overlay/browser/components/lyra/jar.mn" "$SRC/browser/components/lyra/jar.mn"
+cp -f "$ROOT/overlay/browser/components/lyra/moz.build" "$SRC/browser/components/lyra/moz.build"
+cp -f "$ROOT/overlay/browser/locales/en-US/browser/lyraSetup.ftl" "$SRC/browser/locales/en-US/browser/lyraSetup.ftl"
+
+echo "overlay bundled CDN libs"
+cp -f "$ROOT/extensions/decentraleyes-libs/"*.js "$SRC/browser/extensions/webcompat/shims/"
 
 echo "overlay Void settings pane"
 mkdir -p "$SRC/browser/components/preferences/config"
@@ -324,11 +337,26 @@ elif "LyraOpenSearch.init" not in gtext:
         gtext.rstrip()
         + "\ncategory browser-first-window-ready resource:///modules/LyraOpenSearch.sys.mjs LyraOpenSearch.init\n"
     )
+if "LyraScriptBlock.init" not in gtext:
+    gtext = (
+        gtext.rstrip()
+        + "\ncategory browser-before-ui-startup resource:///modules/LyraScriptBlock.sys.mjs LyraScriptBlock.init\n"
+    )
 glue.write_text(gtext)
+
+# Unlock the profile database encryption pref so users can opt in.
+alljs = src / "modules" / "libpref" / "init" / "all.js"
+atext2 = alljs.read_text()
+locked = 'pref("security.storage.encryption.sqlite.enabled", false, locked);'
+unlocked = 'pref("security.storage.encryption.sqlite.enabled", false);'
+if locked in atext2:
+    alljs.write_text(atext2.replace(locked, unlocked, 1))
+elif unlocked not in atext2:
+    raise SystemExit("security.storage.encryption.sqlite.enabled pref not found")
 
 mods = src / "browser" / "modules" / "moz.build"
 mbuild = mods.read_text()
-for mod_name in ("LyraOpenSearch.sys.mjs", "LyraSync.sys.mjs"):
+for mod_name in ("LyraOpenSearch.sys.mjs", "LyraScriptBlock.sys.mjs", "LyraSync.sys.mjs"):
     if f'"{mod_name}"' in mbuild:
         continue
     lines = mbuild.splitlines(keepends=True)
@@ -372,6 +400,9 @@ void_pane = """  voidPrivacy: {
       "voidTyping",
       "voidSpoof",
       "voidDns",
+      "voidProtections",
+      "voidScripts",
+      "voidStorage",
       "voidSync",
       "voidCompat",
     ],
@@ -387,6 +418,13 @@ elif '"voidSync"' not in ptext:
     ptext = ptext.replace(
         '"voidDns",\n      "voidCompat",',
         '"voidDns",\n      "voidSync",\n      "voidCompat",',
+        1,
+    )
+if '"voidProtections"' not in ptext:
+    ptext = ptext.replace(
+        '"voidDns",\n',
+        '"voidDns",\n      "voidProtections",\n'
+        '      "voidScripts",\n      "voidStorage",\n',
         1,
     )
 ptext = ptext.replace(
@@ -603,6 +641,97 @@ lyra-tab-context-set-search-default =
     .label = Set as Default Search Engine
 """
     )
+
+# about:lyrasetup first-run page.
+redir = src / "browser" / "components" / "about" / "AboutRedirector.cpp"
+rtext = redir.read_text()
+if '"lyrasetup"' not in rtext:
+    needle = '    {"welcomeback",'
+    if needle not in rtext:
+        raise SystemExit("AboutRedirector insertion point not found")
+    rtext = rtext.replace(
+        needle,
+        '    {"lyrasetup", "chrome://browser/content/lyra/setup.xhtml",\n'
+        "     nsIAboutModule::ALLOW_SCRIPT | nsIAboutModule::IS_SECURE_CHROME_UI},\n"
+        + needle,
+        1,
+    )
+    redir.write_text(rtext)
+
+aconf = src / "browser" / "components" / "about" / "components.conf"
+actext = aconf.read_text()
+if "'lyrasetup'" not in actext:
+    needle = "    'logins',\n"
+    if needle not in actext:
+        raise SystemExit("about components.conf insertion point not found")
+    aconf.write_text(actext.replace(needle, needle + "    'lyrasetup',\n", 1))
+
+# Page files packaged via a jar.mn in the lyra component dir. DIRS must
+# stay sorted; "lyra" lands between "ipprotection" and "messagepreview".
+components_mozbuild = src / "browser" / "components" / "moz.build"
+cmtext = components_mozbuild.read_text()
+if '"lyra"' not in cmtext:
+    needle = '    "messagepreview",\n'
+    if needle not in cmtext:
+        raise SystemExit("browser/components/moz.build DIRS anchor not found")
+    cmtext = cmtext.replace(needle, '    "lyra",\n' + needle, 1)
+    components_mozbuild.write_text(cmtext)
+
+# Decentraleyes-style local substitutions for common CDN libraries.
+shimsjs = src / "browser" / "extensions" / "webcompat" / "data" / "shims.js"
+stext = shimsjs.read_text()
+if "LyraCdnJquery" not in stext:
+    entries = ""
+    for v in ("3.7.1", "3.6.0", "3.5.1", "2.2.4", "1.12.4"):
+        entries += (
+            "  {\n"
+            '    id: "LyraCdnJquery-' + v + '",\n'
+            '    platform: "all",\n'
+            '    name: "jQuery ' + v + ' (local)",\n'
+            '    file: "lyra-jquery-' + v + '.min.js",\n'
+            "    matches: [\n"
+            '      "*://ajax.googleapis.com/ajax/libs/jquery/' + v + '/jquery.min.js*",\n'
+            '      "*://code.jquery.com/jquery-' + v + '.min.js*",\n'
+            '      "*://cdnjs.cloudflare.com/ajax/libs/jquery/' + v + '/jquery.min.js*",\n'
+            '      "*://cdn.jsdelivr.net/npm/jquery@' + v + '/dist/jquery.min.js*",\n'
+            "    ],\n"
+            "  },\n"
+        )
+    entries += (
+        "  {\n"
+        '    id: "LyraCdnUnderscore",\n'
+        '    platform: "all",\n'
+        '    name: "Underscore.js 1.13.6 (local)",\n'
+        '    file: "lyra-underscore-1.13.6-min.js",\n'
+        "    matches: [\n"
+        '      "*://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.13.6/underscore-min.js*",\n'
+        '      "*://cdn.jsdelivr.net/npm/underscore@1.13.6/underscore-min.js*",\n'
+        "    ],\n"
+        "  },\n"
+    )
+    needle = "];\n\nif (typeof module"
+    if needle not in stext:
+        raise SystemExit("shims.js AVAILABLE_SHIMS end not found")
+    shimsjs.write_text(stext.replace(needle, entries + needle, 1))
+
+manifest = src / "browser" / "extensions" / "webcompat" / "manifest.json"
+mtext = manifest.read_text()
+if "shims/lyra-jquery-3.7.1.min.js" not in mtext:
+    lines = [
+        '"shims/lyra-jquery-1.12.4.min.js"',
+        '"shims/lyra-jquery-2.2.4.min.js"',
+        '"shims/lyra-jquery-3.5.1.min.js"',
+        '"shims/lyra-jquery-3.6.0.min.js"',
+        '"shims/lyra-jquery-3.7.1.min.js"',
+        '"shims/lyra-underscore-1.13.6-min.js"',
+    ]
+    anchor = '    "shims/zendesk-asana-support.js"'
+    if anchor not in mtext:
+        raise SystemExit("webcompat manifest shims anchor not found")
+    mtext = mtext.replace(
+        anchor, anchor + ",\n    " + ",\n    ".join(lines), 1
+    )
+    manifest.write_text(mtext)
 
 # Search engine lineup: drop Perplexity and all Wikipedia variants, add
 # Wiby, Brave Search and two SearXNG instances.

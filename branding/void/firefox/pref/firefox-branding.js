@@ -5,7 +5,7 @@
 // Void branding-specific prefs. Privacy defaults live in prefs/void.cfg.
 
 pref("startup.homepage_override_url", "");
-pref("startup.homepage_welcome_url", "about:home");
+pref("startup.homepage_welcome_url", "about:lyrasetup");
 pref("startup.homepage_welcome_url.additional", "");
 
 pref("app.support.baseURL", "https://quad4.io/");

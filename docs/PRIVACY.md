@@ -1,133 +1,104 @@
-# Privacy defaults
+# Lyra privacy and security notes
 
-Vendor autoconfig plus Firefox enterprise policies. arkenfox is a checklist. Files:
+Design notes for the protections Lyra ships, what is still open, and why.
 
-- `policies/policies.json` (enterprise policy, not locked for the new privacy controls)
-- `prefs/void.cfg` (autoconfig `defaultPref` / `pref` / `lockPref`, plus fingerprint mode)
-- `prefs/autoconfig.js` (loads `void.cfg`, sandbox off so overrides can run)
-- `prefs/void-overrides.cfg.example` (user overlay, LibreWolf-style)
-- `mozconfig` (build-time `MOZ_TELEMETRY_REPORTING=0`, no crash reporter, bundled fonts)
-- Settings: **Lyra** pane in `about:preferences`
+## Local network intrusion blocking
 
-## Sources
+Lyra enables Firefox's Local Network Access (LNA) enforcement and goes
+further than stock:
 
-- Mozilla policy templates: https://mozilla.github.io/policy-templates/
-- LibreWolf settings: https://codeberg.org/librewolf/settings
-- arkenfox user.js: https://github.com/arkenfox/user.js
-- Firefox RFP targets: `toolkit/components/resistfingerprinting/RFPTargets.inc`
-- dns.sb DoH: https://dns.sb/
+    network.lna.enabled                  true (upstream default in ESR153)
+    network.lna.blocking                 true
+    network.lna.block_trackers           true  (Lyra: trackers always denied)
+    network.lna.block_insecure_contexts  true  (Lyra: http pages too)
+    network.lna.websocket.enabled        true  (Lyra: cover ws:// to LAN)
 
-Lyra does not vendor those files. Pref names and intent are recorded in `prefs/void.cfg`.
+Enforcement lives in the HTTP transaction layer
+(netwerk/protocol/http/nsHttpTransaction.cpp) and rejects public -> private
+and public/private -> loopback transitions, with a permission prompt when
+allowed. The "block LAN intrusions" toggle in Settings is `void.lan.block`.
 
-## Strip list (implemented as policy and/or pref)
+Why: Meta (Facebook/Instagram apps, 2024-06-2025) and Yandex (since 2017)
+probed localhost ports from web content to link web identities to app
+accounts (the "Bridges to Self" / localmess research). Meta used STUN/SDP
+munging to a local UDP listener; Yandex ran an HTTP server on known ports.
 
-| Extra | How |
-| --- | --- |
-| Telemetry, Glean usage ping, extra pings | `DisableTelemetry`, locked `toolkit.telemetry.*`, empty server |
-| Studies / Shield / Normandy / Nimbus | `DisableFirefoxStudies`, locked Normandy/Nimbus prefs |
-| Crash reporter phone-home | `--disable-crashreporter`, empty `breakpad.reportURL` |
-| Pocket and new-tab stories | `DisablePocket`, `FirefoxHome.Pocket=false` |
-| Sponsored shortcuts / MARS ads | `FirefoxHome.SponsoredTopSites`, unifiedAds prefs |
-| Firefox Suggest / trending | `FirefoxSuggest`, urlbar featureGates |
-| Firefox accounts / sync promo | `DisableFirefoxAccounts`, `identity.fxaccounts.enabled` default false |
-| Default Mozilla bookmarks / topsites | `NoDefaultBookmarks`, empty default.sites |
-| VPN / Focus / mobile app banners | locked promo prefs |
-| Relay / shopping | locked shopping and relay prefs |
-| AI chat / link preview / smart tab groups | locked `browser.ml.*` |
-| Captive portal and connectivity checks | disabled |
-| Google Safe Browsing live lists | disabled (local lists would still phone Google) |
-| Mozilla remote region / UITour / what's new | disabled |
-| Default Mozilla search spam | uninstall Google/Bing/Amazon/eBay/Twitter search extensions, default DuckDuckGo |
+Known gap: Gecko's WebRTC stack does not enforce LNA on STUN traffic. Our
+WebRTC hardening prefs (ice.no_host, default_address_only) reduce the
+surface but do not fully close the SDP-munged STUN vector. A future fix
+would reject ice-ufrag/ice-pwd rewriting in setLocalDescription like
+Chrome 137+ does.
 
-## Fingerprint modes
+## Script blocking (NoScript-lite)
 
-`void.fingerprint.mode` is a **default**, not locked. Settings > Lyra switches it live.
+`void.js.mode` drives nsIDomainPolicy in LyraScriptBlock.sys.mjs:
 
-| Mode | What it does |
-| --- | --- |
-| `firefox` (default) | Fingerprinting Protection (FPP) with extra 2026 targets. Stock Firefox UA. Letterboxing off. Better site compatibility. |
-| `crowd` | Full Resist Fingerprinting, letterboxing on, tighter fonts, spoofed crowd UA. LibreWolf / Mullvad style. Some sites may break. Crowd mode subtracts `CSSPrefersColorScheme` so Lyra Dark still works. |
+- off: no blocking
+- denylist: sites in void.js.blocklist cannot run any JS (inline or
+  external, including workers)
+- allowlist: only sites in void.js.allowlist run JS
 
-Independent toggles (all `defaultPref`):
+Domain policies propagate to content processes via DomainPolicyClone, so
+this is the same mechanism Firefox uses internally, not a shim.
 
-- Window buckets / letterboxing (`void.window.buckets`, `privacy.resistFingerprinting.letterboxing`)
-- UA spoof vs Firefox default (`void.ua.mode`)
-- Bundled fonts (`gfx.bundled-fonts.activate`, compile `--enable-bundled-fonts`)
-- Font visibility (`layout.css.font-visibility`, `void.fonts.restrict`)
-- Typing / keyboard protection (`void.typing.protection` plus timer rounding)
-- Timezone spoof to UTC (`void.timezone.spoof`, FPP `JSDateTimeUTC`)
-- AudioContext sample-rate spoof (`void.audio.protection`)
-- WebRTC host ICE hiding (`void.webrtc.protect`, `media.peerconnection.ice.no_host`)
-- Sensors / gamepad block (`void.sensors.block`)
-- Geolocation block (`void.geo.block`)
-- DoH mode (`network.trr.mode`)
+## CDN resource substitution (Decentraleyes-lite)
 
-Lyra does **not** insert fake key delays. That would stall input. Typing protection spoofs `KeyboardEvent` fields and rounds timestamps (`privacy.resistFingerprinting.reduceTimerPrecision.microseconds`, default 20 ms).
+Entries in the webcompat system addon's AVAILABLE_SHIMS redirect requests
+for pinned CDN library versions (jQuery 3.7.1/3.6.0/3.5.1/2.2.4/1.12.4,
+Underscore 1.13.6) on ajax.googleapis.com, code.jquery.com,
+cdnjs.cloudflare.com and cdn.jsdelivr.net to bundled byte-identical copies
+in browser/extensions/webcompat/shims/lyra-*. The CDN never sees the
+request, and since the bytes are identical, subresource integrity still
+passes. Unmatched versions fall through to the network normally.
 
-## Timezone and 2026 leak surfaces
+Extending coverage means vendoring more versioned files and adding match
+entries. There is no remote update channel for file payloads, so the set
+grows with releases only.
 
-Default FPP extras beyond Firefox Baseline:
+## Tracking parameter stripping (ClearURLs-lite)
 
-- Timezone: `JSDateTimeUTC` (Atlantic/Reykjavik)
-- Audio: `AudioSampleRate`, `AudioContext`
-- WebRTC: no host candidates, default-address-only, mDNS host obfuscation
-- Sensors: `DeviceSensors`, `Gamepad`, `MediaDevices`, `NetworkConnection`
-- Canvas / WebGL / WebGPU / WebCodecs / PDF.js spoof already on
-- Video element stats, mouse screen points, frame rate, CSS color-gamut, `window.outer` size
-- Bounce tracking protection mode 1 (purge, not dry-run)
-- Mozilla remote FPP overrides off so the local target list wins
-- Speech synthesis / recognition, push, web notifications, WebBluetooth off
-- `:visited` link styling off
+`privacy.query_stripping.enabled` is on for normal and private windows plus
+strip-on-share, with an extended space-separated list in
+`privacy.query_stripping.strip_list` (click IDs, utm variants, platform
+campaign params). Firefox merges the pref list with the remote settings
+query-stripping collection.
 
-Do not enable FPP `CSSPrefersColorScheme`. That spoofs light theme and fights Lyra Dark.
+Not implemented vs full ClearURLs: per-site exception rules, redirector
+skipping, hyperlink auditing beyond browser.send_pings=false, and ETag
+cache tracking defense. The param list covers the common cases.
 
-## DNS over HTTPS
+## Profile storage encryption
 
-Default is **TRR first** (`network.trr.mode` 2) with **dns.sb**:
+`security.storage.encryption.sqlite.enabled` is unlocked in our build and
+opt-in via Settings. When enabled, Firefox encrypts every SQLite database
+under the profile (cookies.sqlite, places.sqlite, etc.) through the
+ObfuscatingVFS layer with per-database keys in lockstore. This is the same
+protection level as Chrome on Linux (OS-encrypted at rest, decryptable by
+same-user processes). It is stronger than stock Firefox, which stores
+cookies plaintext and is trivially readable by infostealer tooling.
 
-- URI: `https://doh.dns.sb/dns-query`
-- Bootstrap: `185.222.222.222`
-- Native DNS fallback stays on
-- Mozilla DoH rollout is off so the provider does not jump to Cloudflare or NextDNS
-
-Policy `DNSOverHTTPS` is enabled and **not locked**. Settings > Lyra can switch to DoH-only or native DNS.
-
-## P2P sync
-
-Optional, off by default. `overlay/browser/modules/LyraSync.sys.mjs` opens `wss://socket.quad4.io/ws` ([Quad4-Software/websocket-server](https://github.com/Quad4-Software/websocket-server)).
-
-The public server is a blind binary relay (`/ws`, 512 KB max). It has echo, broadcast, and log modes. P2P needs **broadcast** so paired devices see each other's frames. The server does not parse payloads and does not log client IPs.
-
-Lyra encrypts every frame with AES-GCM. The key is HKDF-SHA-256 of a pairing code you type on each device (`LYRA-XXXX-XXXX`). The relay only sees ciphertext plus an 8-byte group tag. Passwords, history, and cookies are never sent. Tabs and bookmarks are optional. Incoming tabs do not auto-open unless you turn that on.
-
-Private windows are skipped. The Firefox Accounts sync engine stays off.
-
-## Startup, disk, and memory
-
-Disk cache stays on (512 MB) so repeat loads do not sit in RAM. Cache still clears on shutdown. Content process count default is 4. Session store writes every 60s. Thumbnail capture, Firefox View, sidebar revamp, translations, and profile backup are off. Restore-on-demand is on. Accessibility is force-disabled by default (`accessibility.force_disabled` 1) and can be turned back on in `about:config`.
-
-## What we keep for security
-
-Remote Settings stay on so CRLite and tracking-protection lists still update. CRLite enforce mode (`security.pki.crlite_mode` 2) is on. OCSP is off by default (no CA phone-home) and can be turned on in the Lyra pane. WebGL stays on. EME stays off. HTTPS-Only Mode is on. Query stripping is on. Post-quantum TLS (`security.tls.enable_kyber`) stays on at the Firefox 153 default.
+Roadmap: wrap the lockstore KEK in the OS keyring (SecretService/libsecret
+via the existing nsIOSKeyStore LibSecret backend) so the DEKs are not
+self-contained inside the profile. Chrome's App-Bound Encryption on
+Windows is the same idea via a privileged broker. The "high security"
+variant could wrap the KEK under the primary password instead.
 
 ## Landlock
 
-[Landlock](https://landlock.io/) is a stackable Linux LSM. Firefox already sandboxes content with `nsSandboxBroker`, seccomp-bpf, and user namespaces. Wrapping the Lyra process with Landlock would fight that broker: profile I/O, GPU, downloads, fonts, and content-process file access all go through paths Landlock would have to allow anyway.
+Not implemented yet. Research summary: Firefox's Linux sandbox is
+seccomp-bpf + a filesystem broker (security/sandbox/linux/broker/). Landlock
+(kernel 5.13+) could be applied in the child after clone, translating the
+existing broker Policy into path_beneath rules. Nothing in upstream or
+Chromium ships it; the value is inode-bound FS access that survives exec
+and cannot be raced by realpath tricks. It cannot replace the broker
+(sockets, exec, dynamic paths), so the realistic shape is a layered deny.
+Tractable follow-up, not a config-only change.
 
-Firefox 153 has no Landlock hooks. Lyra does **not** wrap the browser with Landlock. Do not add an outer `landlock` exec around `lyra`.
+## Search and surfaces
 
-## What we do not add
-
-Lyra does not set a telemetry endpoint. `toolkit.telemetry.server` is `data:,`. CI fails if `telemetry.mozilla.org` appears in prefs or policies.
-
-## User overrides
-
-Most behavior is `defaultPref` so Settings and `about:config` stick. `lockPref` is reserved for telemetry, studies, and nag surfaces.
-
-`general.config.sandbox_enabled` is false so `void.cfg` can apply fingerprint modes and load a user file, same idea as LibreWolf `librewolf.overrides.cfg`. Copy `prefs/void-overrides.cfg.example` to one of:
-
-- `$VOID_OVERRIDES`
-- `$LYRA_OVERRIDES`
-- `~/.lyra/void-overrides.cfg`
-- `~/.void/void-overrides.cfg`
-- `void-overrides.cfg` next to the binary
+- Default engines: Brave Search (default), Wiby, SearXNG (searx.be,
+  priv.au). Perplexity and Wikipedia entries removed from the shipped
+  config.
+- Pages that advertise OpenSearch get a one-time install doorhanger and a
+  tab context menu "Set as Default Search Engine" entry.
+- Safe Browsing remote lookups are disabled already in void.cfg.

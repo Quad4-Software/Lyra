@@ -197,3 +197,71 @@ void-spoof-english =
 
 void-restart-note =
     .message = Bundled fonts and some fingerprint targets apply after a restart.
+
+void-ua-mode-firefox-win =
+    .label = Firefox on Windows
+    .description = Report a Windows Firefox user agent.
+
+void-ua-mode-firefox-mac =
+    .label = Firefox on macOS
+    .description = Report a macOS Firefox user agent.
+
+void-ua-mode-chrome-win =
+    .label = Chrome on Windows
+    .description = Report a Windows Chrome user agent. Some sites may misdetect features.
+
+void-ua-mode-edge-win =
+    .label = Edge on Windows
+    .description = Report a Windows Edge user agent.
+
+void-ua-mode-safari-mac =
+    .label = Safari on macOS
+    .description = Report a macOS Safari user agent.
+
+void-ua-mode-custom =
+    .label = Custom string
+    .description = Send the user agent typed below. Applies after restart.
+
+void-ua-custom =
+    .label = Custom user agent
+    .description = Full User-Agent header value. Used when the Custom string mode is selected.
+
+void-protections-group =
+    .label = Local network
+    .description = Stops public websites from reaching devices on your local network.
+
+void-lan-block =
+    .label = Block intrusions into the LAN
+    .description = Public pages cannot contact private or loopback addresses, and tracker-initiated LAN requests are always blocked. Covers the technique Meta and Yandex used to probe localhost.
+
+void-scripts-group =
+    .label = Script blocking
+    .description = Optional per-site JavaScript blocking. Changes apply to new page loads.
+
+void-js-mode =
+    .label = JavaScript policy
+
+void-js-mode-off =
+    .label = Allow scripts everywhere
+
+void-js-mode-denylist =
+    .label = Block on listed sites only
+
+void-js-mode-allowlist =
+    .label = Block everywhere except listed sites
+
+void-js-blocklist =
+    .label = Blocked sites
+    .description = Space separated hosts or origins, for example example.com https://bad.test.
+
+void-js-allowlist =
+    .label = Allowed sites
+    .description = Space separated hosts or origins allowed to run scripts.
+
+void-storage-group =
+    .label = Profile storage
+    .description = Encrypt the SQLite databases in the profile, including cookies.sqlite.
+
+void-storage-encrypt =
+    .label = Encrypt profile databases at rest
+    .description = Applies after restart and cannot be turned off for that profile. Cookies and site data become harder for offline tools to read.

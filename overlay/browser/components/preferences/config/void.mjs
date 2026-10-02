@@ -127,6 +127,43 @@ function applyGeo(block) {
   Services.prefs.setIntPref("permissions.default.geo", block ? 2 : 0);
 }
 
+function applyLan(block) {
+  Services.prefs.setBoolPref("network.lna.block_trackers", block);
+  Services.prefs.setBoolPref("network.lna.block_insecure_contexts", block);
+}
+
+const UA_STRINGS = {
+  "firefox-win":
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:140.0) Gecko/20100101 Firefox/140.0",
+  "firefox-mac":
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:140.0) Gecko/20100101 Firefox/140.0",
+  "chrome-win":
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36",
+  "chrome-mac":
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36",
+  "edge-win":
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36 Edg/140.0.0.0",
+  "safari-mac":
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.6 Safari/605.1.15",
+};
+
+function applyUa() {
+  const mode = currentUaMode();
+  if (mode === "firefox" || mode === "crowd") {
+    if (Services.prefs.prefHasUserValue("general.useragent.override")) {
+      Services.prefs.clearUserPref("general.useragent.override");
+    }
+    return;
+  }
+  const ua =
+    mode === "custom"
+      ? Services.prefs.getStringPref("void.ua.custom", "")
+      : UA_STRINGS[mode];
+  if (ua) {
+    Services.prefs.setStringPref("general.useragent.override", ua);
+  }
+}
+
 function applyVoidMode() {
   const mode = currentMode();
   const buckets = Services.prefs.getBoolPref("void.window.buckets", false);
@@ -169,6 +206,8 @@ function applyVoidMode() {
   applyWebrtc(Services.prefs.getBoolPref("void.webrtc.protect", true));
   applySensors(Services.prefs.getBoolPref("void.sensors.block", true));
   applyGeo(Services.prefs.getBoolPref("void.geo.block", true));
+  applyLan(Services.prefs.getBoolPref("void.lan.block", true));
+  applyUa();
 }
 
 function applyDohMode(mode) {
@@ -198,6 +237,12 @@ for (const info of [
   { id: "void.sync.bookmarks", type: "bool" },
   { id: "void.sync.applyTabs", type: "bool" },
   { id: "void.sync.secret", type: "string" },
+  { id: "void.ua.custom", type: "string" },
+  { id: "void.lan.block", type: "bool" },
+  { id: "void.js.mode", type: "string" },
+  { id: "void.js.blocklist", type: "string" },
+  { id: "void.js.allowlist", type: "string" },
+  { id: "void.storage.encrypt", type: "bool" },
   { id: "privacy.resistFingerprinting.letterboxing", type: "bool" },
   { id: "gfx.bundled-fonts.activate", type: "int" },
   { id: "layout.css.font-visibility", type: "int" },
@@ -228,6 +273,68 @@ Preferences.addSetting({
   disabled: () => currentMode() === "crowd",
   onUserChange() {
     applyVoidMode();
+  },
+});
+
+Preferences.addSetting({
+  id: "voidUaCustom",
+  pref: "void.ua.custom",
+  deps: ["voidUaMode"],
+  disabled: () => currentUaMode() !== "custom",
+  onUserChange() {
+    applyUa();
+  },
+});
+
+Preferences.addSetting({
+  id: "voidLanBlock",
+  pref: "void.lan.block",
+  onUserChange(checked) {
+    applyLan(checked);
+  },
+});
+
+Preferences.addSetting({
+  id: "voidJsMode",
+  pref: "void.js.mode",
+});
+
+Preferences.addSetting({
+  id: "voidJsBlocklist",
+  pref: "void.js.blocklist",
+  deps: ["voidJsMode"],
+  disabled: () =>
+    Services.prefs.getStringPref("void.js.mode", "off") !== "denylist",
+});
+
+Preferences.addSetting({
+  id: "voidJsAllowlist",
+  pref: "void.js.allowlist",
+  deps: ["voidJsMode"],
+  disabled: () =>
+    Services.prefs.getStringPref("void.js.mode", "off") !== "allowlist",
+});
+
+Preferences.addSetting({
+  id: "voidStorageEncrypt",
+  get() {
+    return Services.prefs.getBoolPref(
+      "security.storage.encryption.sqlite.enabled",
+      false
+    );
+  },
+  set(checked) {
+    Services.prefs.setBoolPref(
+      "security.storage.encryption.sqlite.enabled",
+      checked
+    );
+    Services.prefs.setBoolPref("void.storage.encrypt", checked);
+  },
+  setup(emitChange) {
+    return observePref(
+      "security.storage.encryption.sqlite.enabled",
+      emitChange
+    );
   },
 });
 
@@ -562,7 +669,36 @@ try {
               l10nId: "void-ua-mode-crowd",
               controlAttrs: { id: "voidUaCrowd" },
             },
+            {
+              value: "firefox-win",
+              l10nId: "void-ua-mode-firefox-win",
+            },
+            {
+              value: "firefox-mac",
+              l10nId: "void-ua-mode-firefox-mac",
+            },
+            {
+              value: "chrome-win",
+              l10nId: "void-ua-mode-chrome-win",
+            },
+            {
+              value: "edge-win",
+              l10nId: "void-ua-mode-edge-win",
+            },
+            {
+              value: "safari-mac",
+              l10nId: "void-ua-mode-safari-mac",
+            },
+            {
+              value: "custom",
+              l10nId: "void-ua-mode-custom",
+            },
           ],
+        },
+        {
+          id: "voidUaCustom",
+          l10nId: "void-ua-custom",
+          control: "moz-input-text",
         },
       ],
     },
@@ -708,6 +844,63 @@ try {
           id: "voidDohAdvanced",
           l10nId: "void-doh-advanced",
           control: "moz-box-button",
+        },
+      ],
+    },
+    voidProtections: {
+      l10nId: "void-protections-group",
+      headingLevel: 2,
+      items: [
+        {
+          id: "voidLanBlock",
+          l10nId: "void-lan-block",
+          control: "moz-checkbox",
+        },
+      ],
+    },
+    voidScripts: {
+      l10nId: "void-scripts-group",
+      headingLevel: 2,
+      items: [
+        {
+          id: "voidJsMode",
+          l10nId: "void-js-mode",
+          control: "moz-radio-group",
+          options: [
+            {
+              value: "off",
+              l10nId: "void-js-mode-off",
+            },
+            {
+              value: "denylist",
+              l10nId: "void-js-mode-denylist",
+            },
+            {
+              value: "allowlist",
+              l10nId: "void-js-mode-allowlist",
+            },
+          ],
+        },
+        {
+          id: "voidJsBlocklist",
+          l10nId: "void-js-blocklist",
+          control: "moz-input-text",
+        },
+        {
+          id: "voidJsAllowlist",
+          l10nId: "void-js-allowlist",
+          control: "moz-input-text",
+        },
+      ],
+    },
+    voidStorage: {
+      l10nId: "void-storage-group",
+      headingLevel: 2,
+      items: [
+        {
+          id: "voidStorageEncrypt",
+          l10nId: "void-storage-encrypt",
+          control: "moz-checkbox",
         },
       ],
     },

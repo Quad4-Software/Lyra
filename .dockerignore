@@ -1,0 +1,11 @@
+firefox-src/
+objdir/
+out/
+dist/
+.cache/
+.git/
+*.xpi
+*.tar.xz
+*.tar.bz2
+*.tar.gz
+__pycache__/
