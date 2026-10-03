@@ -33,7 +33,7 @@ jobs:
   linux:
     name: Linux x86_64
     if: github.event_name != 'workflow_dispatch' || inputs.linux
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     timeout-minutes: 360
     permissions:
       contents: read
@@ -41,7 +41,7 @@ jobs:
       EXTRA_MOZCONFIG: ${{ github.event.inputs.extra_mozconfig || '' }}
     steps:
       - name: Check out repository
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        uses: useblacksmith/checkout@v1 # v7.0.1
         with:
           persist-credentials: false
 
@@ -94,7 +94,7 @@ jobs:
   windows:
     name: Windows x86_64
     if: github.event_name != 'workflow_dispatch' || inputs.windows
-    runs-on: windows-latest
+    runs-on: blacksmith-4vcpu-windows-2025
     timeout-minutes: 360
     permissions:
       contents: read
@@ -189,7 +189,7 @@ jobs:
 
   release:
     name: GitHub release
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     needs:
       - linux
       - windows
