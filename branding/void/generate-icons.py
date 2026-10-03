@@ -6,6 +6,7 @@
 
 from __future__ import annotations
 
+import base64
 import shutil
 import subprocess
 import sys
@@ -117,9 +118,13 @@ def render_wordmark(path: Path, text: str, fill: str, width: int, height: int, p
     )
 
 
+def png_data_uri(path: Path) -> str:
+    return "data:image/png;base64," + base64.standard_b64encode(path.read_bytes()).decode("ascii")
+
+
 def write_product_svgs() -> None:
     shutil.copy2(LYRA_PNG, CONTENT / "lyra-mark.png")
-    href = "lyra-mark.png"
+    href = png_data_uri(LYRA_PNG)
     write(
         ASSETS / "lyra-mark.svg",
         f'''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024" role="img" aria-label="Lyra">
@@ -290,24 +295,46 @@ def main() -> int:
         shutil.copy2(wm_light, CONTENT / "about-wordmark.png")
         shutil.copy2(wm_dark, CONTENT / "about-wordmark-on-light.png")
 
-        lockup_mark = tmp / "lockup-mark.png"
-        resize_mark(lockup_mark, 112)
+        lockup_wm = tmp / "lockup-wordmark.png"
         magick(
-            "-size",
-            "640x168",
-            f"xc:{CANVAS}",
-            str(lockup_mark),
+            "-background",
+            "none",
+            "-fill",
+            PAPER,
+            "-font",
+            str(FONT),
+            "-pointsize",
+            "56",
+            "-kerning",
+            "12",
+            "label:LYRA",
+            "-trim",
+            "+repage",
+            str(lockup_wm),
+        )
+        magick(
+            "(",
+            str(LYRA_PNG),
+            "-resize",
+            "112x112",
+            ")",
+            "(",
+            str(lockup_wm),
+            ")",
+            "-background",
+            "none",
             "-gravity",
-            "west",
-            "-geometry",
-            "+28+0",
-            "-composite",
-            str(wm_light),
+            "center",
+            "+smush",
+            "28",
+            "-background",
+            CANVAS,
             "-gravity",
-            "west",
-            "-geometry",
-            "+168+0",
-            "-composite",
+            "center",
+            "-bordercolor",
+            CANVAS,
+            "-border",
+            "36x28",
             str(ASSETS / "lyra-lockup-on-dark.png"),
         )
 
@@ -323,16 +350,45 @@ def main() -> int:
             "-composite",
             str(ASSETS / "apple-touch-icon.png"),
         )
+
+        og_wm = tmp / "og-wordmark.png"
         magick(
-            "-size",
-            "1200x630",
-            f"xc:{CANVAS}",
-            str(ASSETS / "lyra-lockup-on-dark.png"),
+            "-background",
+            "none",
+            "-fill",
+            PAPER,
+            "-font",
+            str(FONT),
+            "-pointsize",
+            "96",
+            "-kerning",
+            "14",
+            "label:LYRA",
+            "-trim",
+            "+repage",
+            str(og_wm),
+        )
+        magick(
+            "(",
+            str(LYRA_PNG),
             "-resize",
-            "960x",
+            "240x240",
+            ")",
+            "(",
+            str(og_wm),
+            ")",
+            "-background",
+            "none",
             "-gravity",
             "center",
-            "-composite",
+            "+smush",
+            "40",
+            "-background",
+            CANVAS,
+            "-gravity",
+            "center",
+            "-extent",
+            "1200x630",
             str(ASSETS / "og.webp"),
         )
 

@@ -1,10 +1,8 @@
 # Lyra
 
-Firefox ESR fork by [Quad4](https://quad4.io). Mozilla telemetry, studies, Pocket, and accounts promo are off. uBlock Origin is force-installed.
+<img src="branding/void/assets/lyra-mark.png" alt="Lyra" width="72" height="72">
 
-Product name: Lyra
-Vendor: Quad4
-Binary, profile, remoting name, and app id: `lyra`
+Firefox ESR fork by [Quad4](https://quad4.io). Mozilla telemetry, studies, Pocket, and accounts promo are off. uBlock Origin is force-installed.
 
 This git repo is the overlay. It does not contain Firefox source.
 
