@@ -1,16 +1,46 @@
-# Lyra
+<h1>
+  <img src="branding/void/assets/lyra-mark.png" alt="" width="48" height="48" align="absmiddle">
+  Lyra
+</h1>
 
-<img src="branding/void/assets/lyra-mark.png" alt="Lyra" width="72" height="72">
-
-Firefox ESR fork by [Quad4](https://quad4.io). Mozilla telemetry, studies, Pocket, and accounts promo are off. uBlock Origin is force-installed.
-
-This git repo is the overlay. It does not contain Firefox source.
+Firefox ESR fork by [Quad4](https://quad4.io). This git repo is the overlay. It does not contain Firefox source.
 
 Pinned base: Firefox 153.4.0esr.
 
+## Features
+
+| Feature | Detail |
+| --- | --- |
+| Engine | Firefox 153.4.0esr |
+| uBlock Origin | Force-installed 1.75.0, AMO updates on |
+| Telemetry | Mozilla telemetry, studies, Pocket, and accounts promo off |
+| Search | Brave Search. Google, Bing, Amazon, eBay, and Twitter engines removed |
+| DNS | DNS over HTTPS via dns.sb, native fallback on |
+| Fingerprint | Firefox crowd by default. Optional Resist Fingerprinting mode |
+| Tracking | Strict blocking, Global Privacy Control, HTTPS-Only, query stripping |
+| DRM | Encrypted Media Extensions off |
+| WebRTC | Local IPs hidden (no host ICE candidates) |
+| LAN | Public pages cannot probe private or loopback addresses |
+| Sync | Optional encrypted P2P via `wss://socket.quad4.io/ws`, off by default |
+
+Every control in the settings pane can be changed. Crowd mode is the one that will break some sites.
+
 ## Build
 
-Linux host with about 30 GB disk and 16 GB RAM:
+About 30 GB disk and 16 GB RAM. From this repo:
+
+```
+podman build --output type=local,dest=out .
+```
+
+Writes `out/lyra-<version>-linux-x86_64.tar.xz`. To keep the toolchain image and open a shell instead:
+
+```
+podman build --target build -t lyra-build .
+podman run --rm -it lyra-build bash
+```
+
+Host without a container:
 
 ```
 ./scripts/fetch-firefox.sh ./firefox-src
@@ -26,31 +56,6 @@ export MOZCONFIG="$PWD/mozconfig"
 ../scripts/package-extras.sh ./objdir/dist/bin
 ./objdir/dist/bin/lyra
 ```
-
-`./scripts/bootstrap-linux.sh` prints the same steps.
-
-GitHub Actions:
-
-- `validate.yml` on push and pull request (layout, policies, zizmor)
-- `build.yml` on `v*` tags and workflow_dispatch (Linux and Windows compiles, GitHub release on tags)
-
-## Layout
-
-| Path | Role |
-| --- | --- |
-| `branding/void/` | Lyra bird mark, Quad4 vendor marks, `browser/branding/void` overlay |
-| `policies/policies.json` | Enterprise policies |
-| `prefs/void.cfg` | Autoconfig prefs |
-| `prefs/void-overrides.cfg.example` | User overlay |
-| `overlay/` | Settings pane, locales, P2P sync, desktop file |
-| `extensions/ublock/` | uBlock Origin pin and fetch |
-| `mozconfig` | Build flags |
-| `mozconfig.linux` | Linux extras |
-| `mozconfig.windows` | Windows extras |
-| `patches/` | Documented source edits |
-| `scripts/` | Fetch, overlay, package, CI, validate |
-
-Product icons come from `branding/void/assets/lyra-mark.png`. `branding/void/generate-icons.py` writes the Firefox rasters, wordmarks, and SVG wrappers. Overlay directory names stay `void` (prefs, themes, branding path).
 
 ## License
 
