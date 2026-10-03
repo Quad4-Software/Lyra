@@ -8,7 +8,7 @@ Binary, profile, remoting name, and app id: `lyra`
 
 This git repo is the overlay. It does not contain Firefox source.
 
-Pinned base: Firefox 153.3.0esr.
+Pinned base: Firefox 153.4.0esr.
 
 ## Build
 
@@ -29,7 +29,7 @@ export MOZCONFIG="$PWD/mozconfig"
 ./objdir/dist/bin/lyra
 ```
 
-`./scripts/bootstrap-linux.sh` prints the same steps. Details: [docs/BUILD.md](docs/BUILD.md).
+`./scripts/bootstrap-linux.sh` prints the same steps.
 
 GitHub Actions:
 
@@ -40,7 +40,7 @@ GitHub Actions:
 
 | Path | Role |
 | --- | --- |
-| `branding/void/` | Icons and `browser/branding/void` overlay |
+| `branding/void/` | Lyra bird mark, Quad4 vendor marks, `browser/branding/void` overlay |
 | `policies/policies.json` | Enterprise policies |
 | `prefs/void.cfg` | Autoconfig prefs |
 | `prefs/void-overrides.cfg.example` | User overlay |
@@ -52,10 +52,12 @@ GitHub Actions:
 | `patches/` | Documented source edits |
 | `scripts/` | Fetch, overlay, package, CI, validate |
 
+Product icons come from `branding/void/assets/lyra-mark.png`. `branding/void/generate-icons.py` writes the Firefox rasters, wordmarks, and SVG wrappers. Overlay directory names stay `void` (prefs, themes, branding path).
+
 ## License
 
 Firefox overlay files: MPL-2.0.
-Quad4 marks: Quad4.
+Lyra mark and Quad4 marks: Quad4.
 Space Mono: OFL-1.1.
 uBlock Origin: GPL-3.0-only, fetched not vendored.
 

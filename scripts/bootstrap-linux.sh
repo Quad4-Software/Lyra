@@ -49,7 +49,5 @@ and 16 GB RAM.
    ./objdir/dist/bin/lyra
 
 `mach package` writes under objdir/dist/. GitHub Actions compiles this
-path on v* tags and workflow_dispatch (see .github/workflows/build-linux.yml).
-
-See docs/BUILD.md and docs/SECURITY-UPDATES.md.
+path on v* tags and workflow_dispatch (see .github/workflows/build.yml).
 EOF

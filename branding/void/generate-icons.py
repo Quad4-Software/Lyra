@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-# Copyright Quad4. Icon generation for Void Firefox branding.
-# Rasterizes Quad4 mark + Space Mono wordmark into Firefox branding files.
+# Copyright Quad4. Icon generation for Lyra Firefox branding.
+# Rasterizes the Lyra bird mark into Firefox branding files.
 
-"""Generate Firefox branding raster assets from Quad4 source art."""
+"""Generate Firefox branding raster and SVG assets from lyra-mark.png."""
 
 from __future__ import annotations
 
@@ -16,19 +16,11 @@ ASSETS = ROOT / "assets"
 FIREFOX = ROOT / "firefox"
 CONTENT = FIREFOX / "content"
 FONT = ROOT / "fonts" / "SpaceMono-Bold.ttf"
+LYRA_PNG = ASSETS / "lyra-mark.png"
 
 CANVAS = "#0A0A0B"
 RAISED = "#16161A"
 PAPER = "#FAFAFA"
-
-MARK_PATHS = """
-    <path d="M 0.10097 -0.97999 L 0.09859 -0.69728 L 0.39556 -0.52385 L 0.09859 -0.35517 L 0.09859 -0.11522 L 0.83983 -0.54286 Z"/>
-    <path d="M -0.09859 -0.97762 L -0.83745 -0.54523 L -0.10097 -0.11760 L -0.09622 -0.35517 L -0.39081 -0.52385 L -0.09622 -0.69728 Z"/>
-    <path d="M -0.86121 -0.49059 L -0.86121 0.36943 L -0.62363 0.23163 L -0.62126 -0.10810 L -0.32666 0.06533 L -0.11285 -0.05821 Z"/>
-    <path d="M 0.86121 -0.49059 L 0.11998 -0.05821 L 0.33142 0.06533 L 0.62363 -0.10572 L 0.62601 0.23163 L 0.86121 0.36705 Z"/>
-    <path d="M 0.07008 0.19362 L 0.07008 0.98237 L 0.79231 0.54761 L 0.56424 0.41219 L 0.26252 0.59750 L 0.26014 0.30291 Z"/>
-    <path d="M -0.07008 0.19600 L -0.25777 0.30291 L -0.26014 0.59750 L -0.56186 0.41219 L -0.78993 0.54761 L -0.07008 0.97999 Z"/>
-"""
 
 LINUX_SIZES = (16, 22, 24, 32, 48, 64, 128, 256)
 ICO_SIZES = (16, 32, 48, 64, 128, 256)
@@ -38,97 +30,152 @@ def run(cmd: list[str]) -> None:
     subprocess.run(cmd, check=True)
 
 
+def magick(*args: str) -> None:
+    run(["magick", *args])
+
+
 def write(path: Path, text: str) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(text)
+    path.write_text(text if text.endswith("\n") else text + "\n")
 
 
-def rsvg(svg: Path, png: Path, width: int, height: int | None = None) -> None:
-    height = height or width
-    png.parent.mkdir(parents=True, exist_ok=True)
-    run(
-        [
-            "rsvg-convert",
-            "-w",
-            str(width),
-            "-h",
-            str(height),
-            "-o",
-            str(png),
-            str(svg),
-        ]
-    )
-
-
-def convert(*args: str) -> None:
-    run(["convert", *args])
-
-
-def mark_svg(size: int, *, fill: str, background: str | None, pad: float = 0.78) -> str:
-    bg = (
-        f'<rect width="{size}" height="{size}" fill="{background}"/>'
-        if background
-        else ""
-    )
-    scale = size * pad / 2.0
-    cx = size / 2.0
-    return f"""<svg xmlns="http://www.w3.org/2000/svg" width="{size}" height="{size}" viewBox="0 0 {size} {size}">
-  {bg}
-  <g transform="translate({cx} {cx}) scale({scale})" fill="{fill}" fill-rule="nonzero">
-    {MARK_PATHS}
-  </g>
-</svg>
-"""
-
-
-def document_svg(size: int) -> str:
-    return f"""<svg xmlns="http://www.w3.org/2000/svg" width="{size}" height="{size}" viewBox="0 0 32 32">
-  <rect width="32" height="32" fill="none"/>
-  <rect x="5" y="3" width="18" height="26" rx="1.5" fill="{PAPER}"/>
-  <polygon points="17,3 23,9 17,9" fill="#E6E6E6"/>
-  <g transform="translate(14 19) scale(7)" fill="{CANVAS}" fill-rule="nonzero">
-    {MARK_PATHS}
-  </g>
-</svg>
-"""
-
-
-def render_wordmark(path: Path, text: str, fill: str, width: int, height: int, pointsize: int) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    run(
-        [
-            "convert",
+def resize_mark(dest: Path, size: int, *, background: str | None = None) -> None:
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    if background:
+        magick(
+            str(LYRA_PNG),
             "-background",
-            "none",
-            "-fill",
-            fill,
-            "-font",
-            str(FONT),
-            "-pointsize",
-            str(pointsize),
-            "-kerning",
-            "12",
-            f"label:{text}",
+            background,
             "-gravity",
             "center",
+            "-resize",
+            f"{size}x{size}",
             "-extent",
-            f"{width}x{height}",
-            str(path),
-        ]
+            f"{size}x{size}",
+            str(dest),
+        )
+    else:
+        magick(
+            str(LYRA_PNG),
+            "-background",
+            "none",
+            "-filter",
+            "Lanczos",
+            "-resize",
+            f"{size}x{size}",
+            str(dest),
+        )
+
+
+def dark_mark(src_size: int, dest: Path) -> None:
+    magick(
+        str(LYRA_PNG),
+        "-resize",
+        f"{src_size}x{src_size}",
+        "(",
+        "+clone",
+        "-alpha",
+        "extract",
+        ")",
+        "-alpha",
+        "off",
+        "-fill",
+        CANVAS,
+        "-colorize",
+        "100",
+        "-compose",
+        "CopyOpacity",
+        "-composite",
+        str(dest),
     )
 
 
 def ico_from_pngs(pngs: list[Path], dest: Path) -> None:
     dest.parent.mkdir(parents=True, exist_ok=True)
-    convert(*[str(p) for p in pngs], str(dest))
+    magick(*[str(p) for p in pngs], str(dest))
+
+
+def render_wordmark(path: Path, text: str, fill: str, width: int, height: int, pointsize: int) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    magick(
+        "-background",
+        "none",
+        "-fill",
+        fill,
+        "-font",
+        str(FONT),
+        "-pointsize",
+        str(pointsize),
+        "-kerning",
+        "12",
+        f"label:{text}",
+        "-gravity",
+        "center",
+        "-extent",
+        f"{width}x{height}",
+        str(path),
+    )
+
+
+def write_product_svgs() -> None:
+    shutil.copy2(LYRA_PNG, CONTENT / "lyra-mark.png")
+    href = "lyra-mark.png"
+    write(
+        ASSETS / "lyra-mark.svg",
+        f'''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024" role="img" aria-label="Lyra">
+  <image href="{href}" width="1024" height="1024"/>
+</svg>
+''',
+    )
+    write(
+        CONTENT / "about-logo.svg",
+        f'''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" fill="context-fill" fill-opacity="context-fill-opacity" role="img" aria-label="Lyra">
+  <image href="{href}" width="1024" height="1024"/>
+</svg>
+''',
+    )
+    write(
+        ASSETS / "favicon.svg",
+        f'''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Lyra">
+  <rect width="64" height="64" rx="14" fill="{CANVAS}"/>
+  <image href="{href}" x="2" y="2" width="60" height="60"/>
+</svg>
+''',
+    )
+    write(
+        CONTENT / "document_pdf.svg",
+        f'''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="PDF">
+  <rect x="4" y="2" width="20" height="28" rx="2" fill="#16161A"/>
+  <rect x="4" y="2" width="20" height="28" rx="2" fill="none" stroke="#FAFAFA" stroke-width="1.5"/>
+  <image href="{href}" x="6" y="8" width="16" height="16"/>
+</svg>
+''',
+    )
+    write(
+        CONTENT / "about-wordmark.svg",
+        '''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 48" fill="context-fill" fill-opacity="context-fill-opacity">
+  <text x="140" y="36" text-anchor="middle" font-family="Space Mono, ui-monospace, monospace" font-weight="700" font-size="36" letter-spacing="10">LYRA</text>
+</svg>
+''',
+    )
+    write(
+        CONTENT / "firefox-wordmark.svg",
+        '''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 48" fill="context-fill" fill-opacity="context-fill-opacity">
+  <text x="140" y="36" text-anchor="middle" font-family="Space Mono, ui-monospace, monospace" font-weight="700" font-size="36" letter-spacing="10">LYRA</text>
+</svg>
+''',
+    )
 
 
 def main() -> int:
-    if not shutil.which("rsvg-convert") or not shutil.which("convert"):
-        print("need rsvg-convert and ImageMagick convert", file=sys.stderr)
+    if not shutil.which("magick"):
+        print("need ImageMagick magick", file=sys.stderr)
         return 1
     if not FONT.is_file():
         print(f"missing font {FONT}", file=sys.stderr)
+        return 1
+    if not LYRA_PNG.is_file():
+        print(f"missing mark {LYRA_PNG}", file=sys.stderr)
         return 1
 
     tmp = ROOT / ".gen-tmp"
@@ -137,32 +184,36 @@ def main() -> int:
     tmp.mkdir()
 
     try:
-        transparent = tmp / "mark-transparent.svg"
-        on_canvas = tmp / "mark-canvas.svg"
-        on_raised = tmp / "mark-raised.svg"
-        on_paper = tmp / "mark-paper.svg"
-        document = tmp / "document.svg"
-        write(transparent, mark_svg(1024, fill=PAPER, background=None))
-        write(on_canvas, mark_svg(1024, fill=PAPER, background=CANVAS))
-        write(on_raised, mark_svg(1024, fill=PAPER, background=RAISED))
-        write(on_paper, mark_svg(1024, fill=CANVAS, background=PAPER))
-        write(document, document_svg(1024))
+        write_product_svgs()
 
         for size in LINUX_SIZES:
-            rsvg(transparent, FIREFOX / f"default{size}.png", size)
+            resize_mark(FIREFOX / f"default{size}.png", size)
 
-        rsvg(transparent, CONTENT / "about-logo.png", 256)
-        rsvg(transparent, CONTENT / "about-logo@2x.png", 512)
-        rsvg(transparent, CONTENT / "about.png", 128)
-        rsvg(on_raised, CONTENT / "about-logo-private.png", 256)
-        rsvg(on_raised, CONTENT / "about-logo-private@2x.png", 512)
+        resize_mark(CONTENT / "about-logo.png", 256)
+        resize_mark(CONTENT / "about-logo@2x.png", 512)
+        resize_mark(CONTENT / "about.png", 128)
+        resize_mark(CONTENT / "about-logo-private.png", 256, background=RAISED)
+        resize_mark(CONTENT / "about-logo-private@2x.png", 512, background=RAISED)
 
-        rsvg(on_canvas, FIREFOX / "VisualElements_70.png", 70)
-        rsvg(on_canvas, FIREFOX / "VisualElements_150.png", 150)
-        rsvg(on_raised, FIREFOX / "PrivateBrowsing_70.png", 70)
-        rsvg(on_raised, FIREFOX / "PrivateBrowsing_150.png", 150)
+        resize_mark(FIREFOX / "VisualElements_70.png", 70, background=CANVAS)
+        resize_mark(FIREFOX / "VisualElements_150.png", 150, background=CANVAS)
+        resize_mark(FIREFOX / "PrivateBrowsing_70.png", 70, background=RAISED)
+        resize_mark(FIREFOX / "PrivateBrowsing_150.png", 150, background=RAISED)
 
-        rsvg(on_canvas, FIREFOX / "background.png", 650, 500)
+        magick(
+            "-size",
+            "650x500",
+            f"xc:{CANVAS}",
+            str(LYRA_PNG),
+            "-resize",
+            "380x380",
+            "-gravity",
+            "center",
+            "-compose",
+            "over",
+            "-composite",
+            str(FIREFOX / "background.png"),
+        )
 
         ico_pngs = [FIREFOX / f"default{size}.png" for size in ICO_SIZES]
         ico_from_pngs(ico_pngs, FIREFOX / "firefox.ico")
@@ -174,7 +225,28 @@ def main() -> int:
         doc_pngs = []
         for size in ICO_SIZES:
             png = tmp / f"document{size}.png"
-            rsvg(document, png, size)
+            pad = max(2, size // 10)
+            rx = max(1, size // 16)
+            mark = tmp / f"docmark{size}.png"
+            dark_mark(max(8, int(size * 0.45)), mark)
+            magick(
+                "-size",
+                f"{size}x{size}",
+                "xc:none",
+                "-fill",
+                PAPER,
+                "-draw",
+                f"roundrectangle {pad},{pad} {size - pad},{size - pad * 0.6:.0f} {rx},{rx}",
+                mark,
+                "-gravity",
+                "center",
+                "-geometry",
+                f"+0+{size // 12}",
+                "-compose",
+                "over",
+                "-composite",
+                str(png),
+            )
             doc_pngs.append(png)
         ico_from_pngs(doc_pngs, FIREFOX / "document.ico")
         ico_from_pngs(doc_pngs, FIREFOX / "document_pdf.ico")
@@ -184,23 +256,16 @@ def main() -> int:
         )
         shutil.copy2(FIREFOX / "newtab.ico", FIREFOX / "newwindow.ico")
 
-        pb_svg = tmp / "pb.svg"
-        write(pb_svg, mark_svg(1024, fill=PAPER, background=RAISED, pad=0.7))
         pb_pngs = []
         for size in ICO_SIZES:
             png = tmp / f"pb{size}.png"
-            rsvg(pb_svg, png, size)
+            resize_mark(png, size, background=RAISED)
             pb_pngs.append(png)
         ico_from_pngs(pb_pngs, FIREFOX / "pbmode.ico")
 
-        convert(
-            "-size",
-            "150x57",
-            f"xc:{CANVAS}",
-            str(tmp / "header.png"),
-        )
-        rsvg(transparent, tmp / "header-mark.png", 40)
-        convert(
+        magick("-size", "150x57", f"xc:{CANVAS}", str(tmp / "header.png"))
+        resize_mark(tmp / "header-mark.png", 40)
+        magick(
             str(tmp / "header.png"),
             str(tmp / "header-mark.png"),
             "-gravity",
@@ -211,41 +276,64 @@ def main() -> int:
             "BMP3:" + str(FIREFOX / "wizHeader.bmp"),
         )
         shutil.copy2(FIREFOX / "wizHeader.bmp", FIREFOX / "wizHeaderRTL.bmp")
-        convert(
+        magick(
             str(FIREFOX / "background.png"),
             "-resize",
             "164x314!",
             "BMP3:" + str(FIREFOX / "wizWatermark.bmp"),
         )
 
-        wm_light = tmp / "void-wordmark-light.png"
-        wm_dark = tmp / "void-wordmark-dark.png"
-        render_wordmark(wm_light, "VOID", PAPER, 560, 80, 56)
-        render_wordmark(wm_dark, "VOID", CANVAS, 560, 80, 56)
+        wm_light = tmp / "lyra-wordmark-light.png"
+        wm_dark = tmp / "lyra-wordmark-dark.png"
+        render_wordmark(wm_light, "LYRA", PAPER, 560, 80, 56)
+        render_wordmark(wm_dark, "LYRA", CANVAS, 560, 80, 56)
         shutil.copy2(wm_light, CONTENT / "about-wordmark.png")
         shutil.copy2(wm_dark, CONTENT / "about-wordmark-on-light.png")
 
-        lockup = tmp / "void-lockup.svg"
-        write(
-            lockup,
-            f"""<svg xmlns="http://www.w3.org/2000/svg" width="640" height="168" viewBox="0 0 640 168">
-  <rect width="640" height="168" fill="{CANVAS}"/>
-  <g transform="translate(84 84) scale(58)" fill="{PAPER}" fill-rule="nonzero">
-    {MARK_PATHS}
-  </g>
-</svg>
-""",
-        )
-        rsvg(lockup, tmp / "void-lockup-mark.png", 640, 168)
-        convert(
-            str(tmp / "void-lockup-mark.png"),
+        lockup_mark = tmp / "lockup-mark.png"
+        resize_mark(lockup_mark, 112)
+        magick(
+            "-size",
+            "640x168",
+            f"xc:{CANVAS}",
+            str(lockup_mark),
+            "-gravity",
+            "west",
+            "-geometry",
+            "+28+0",
+            "-composite",
             str(wm_light),
             "-gravity",
             "west",
             "-geometry",
             "+168+0",
             "-composite",
-            str(ASSETS / "void-lockup-on-dark.png"),
+            str(ASSETS / "lyra-lockup-on-dark.png"),
+        )
+
+        magick(
+            "-size",
+            "180x180",
+            f"xc:{CANVAS}",
+            str(LYRA_PNG),
+            "-resize",
+            "148x148",
+            "-gravity",
+            "center",
+            "-composite",
+            str(ASSETS / "apple-touch-icon.png"),
+        )
+        magick(
+            "-size",
+            "1200x630",
+            f"xc:{CANVAS}",
+            str(ASSETS / "lyra-lockup-on-dark.png"),
+            "-resize",
+            "960x",
+            "-gravity",
+            "center",
+            "-composite",
+            str(ASSETS / "og.webp"),
         )
 
         print("generated Firefox branding rasters under", FIREFOX)

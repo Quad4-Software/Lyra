@@ -5,8 +5,8 @@
 # NSIS branding defines for Lyra Windows builds.
 # Windows installer binaries are not produced yet.
 
-!define BrandFullNameInternal "Void"
-!define BrandFullName "Void"
+!define BrandFullNameInternal "Lyra"
+!define BrandFullName "Lyra"
 !define CompanyName "Quad4"
 !define URLInfoAbout "https://quad4.io/"
 !define HelpLink "https://quad4.io/"

@@ -249,6 +249,15 @@ def check_branding() -> None:
     require(assets / "quad4-mark.svg")
     require(assets / "quad4-lockup-on-dark.svg")
     require(assets / "favicon.svg")
+    require(assets / "lyra-mark.png")
+    require(assets / "lyra-mark.svg")
+    require(assets / "lyra-lockup-on-dark.png")
+    require(brand / "content" / "lyra-mark.png")
+    wordmark = (brand / "content" / "about-wordmark.svg").read_text() if (brand / "content" / "about-wordmark.svg").exists() else ""
+    if "LYRA" not in wordmark:
+        error("about-wordmark.svg must say LYRA")
+    if "VOID" in wordmark:
+        error("about-wordmark.svg must not say VOID")
 
 
 def check_layout() -> None:

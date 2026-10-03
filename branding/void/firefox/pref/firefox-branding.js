@@ -2,7 +2,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-// Void branding-specific prefs. Privacy defaults live in prefs/void.cfg.
+// Lyra branding-specific prefs. Privacy defaults live in prefs/void.cfg.
 
 pref("startup.homepage_override_url", "");
 pref("startup.homepage_welcome_url", "about:lyrasetup");
@@ -15,7 +15,7 @@ pref("app.releaseNotesURL.aboutDialog", "https://quad4.io/");
 pref("app.update.url.manual", "https://quad4.io/");
 pref("app.update.url.details", "https://quad4.io/");
 
-// No in-app Mozilla updater until Void ships its own update channel.
+// No in-app Mozilla updater until Lyra ships its own update channel.
 pref("app.update.interval", 0);
 pref("app.update.promptWaitTime", 0);
 pref("app.update.checkInstallTime.days", 0);
